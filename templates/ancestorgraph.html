@@ -1,0 +1,1693 @@
+{% extends "base.html" %}
+
+{% block body %}
+    <script src="//d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    <script>window.d3 || document.write('<script src="/static/js/d3.v3.min.js"><\/script>')</script>
+    <script type="text/javascript" src="/static/js/rcolor.js"></script>
+	<style>
+		#text {
+			font: 11px sans-serif;
+			cursor: pointer;
+            -webkit-user-select: none; /* Chrome/Safari */
+            -moz-user-select: none; /* Firefox */
+            -ms-user-select: none; /* IE10+ */
+
+            /* Rules below not implemented in browsers yet */
+            -o-user-select: none;
+            user-select: none;
+            unselectable: on;
+		}
+
+		#col2 {
+			border: 2px solid rgba(0, 0, 0, .6);
+			margin-top: 0px;
+			padding-top: 3px;
+            padding-left: 3px;
+			border-radius: 4px;
+			position: fixed;
+			min-height: 4.8em;
+            display: none;
+			width: 280px;
+			top: 50px;
+			left: 600px;
+			color: black;
+			background-color: rgba(245, 245, 245, .8);
+            overflow-x: hidden;
+            overflow-y:hidden;
+            overflow:hidden;
+		}
+
+		p {
+			-webkit-margin-after: 0em;
+			-webkit-margin-before: 0em;
+			margin-bottom: 0em;
+			margin-top: 0em;
+		}
+
+		#current {
+			font-weight: bold;
+		}
+
+        body.wait, body.wait *{
+            cursor: wait !important;
+        }
+
+        #overlay {
+             visibility: hidden;
+             position: fixed;
+             left: 0px;
+             top: 0px;
+             width:100%;
+             height:100%;
+             text-align:center;
+             z-index: 1000;
+        }
+
+        #overlay div {
+             width:430px;
+             margin: 100px auto;
+             margin-top: 118px;
+             padding:15px;
+             text-align:center;
+        }
+
+        #ruler { visibility: hidden; white-space: nowrap;}
+
+        #visheader {
+            width:900px;
+            background: rgba(239, 243, 247, .8);
+
+        }
+        .scrolling {
+            position: fixed;
+            top: 87px;
+            margin-left: 10px;
+        }
+	</style>
+<script type="text/javascript">
+    String.prototype.visualLength = function() {
+        var ruler = document.getElementById("ruler");
+        ruler.innerHTML = this.replace(/ /g,'f');
+        return ruler.offsetWidth;
+    }
+</script>
+
+<div id="col2">
+    <p></p>
+</div>
+
+<center>
+    <br/>
+    <table width="100%"><tr><td align="left">
+        <div><h1><span id="graphtype">Ancestor</span> Graph for {{username}}<img src="/static/images/user1.png"
+                                                     style='margin-bottom: -3px; padding-left: 2px; cursor:pointer;'
+                                                     onclick='changeUser()'
+                                                     title="Change Focus Person"
+                                                     alt="Change Focus Person"></h1>
+        </div>
+        <div style="margin-top: 15px; margin-bottom: -6px;">
+            <div class="slideDownUser" style="display: none; padding-bottom: 15px;"><input
+                    style="height: 24px; width: 200px;"
+                    id="userfield"
+                    onkeypress="entsub(event,this.form);"/>
+                <button style="margin-left: 8px;" onclick="submitProfile();">Change Person</button>
+                <a href="/graph"><img src="/static/images/reset.png" style="padding-left: 11px; padding-bottom:2px; vertical-align: middle; cursor:pointer;" title="Reset to Current User" alt="Reset to Current User"></a>
+            </div>
+        </div>
+        <div style="padding-top: 5px;">
+            <label><strong>Generations to Display: </strong></label>
+            <select id = "genlimit">
+                <option value = "1">1</option>
+                <option value = "2">2</option>
+                <option value = "3">3</option>
+                <option value = "4">4</option>
+                <option value = "5">5</option>
+                <option value = "6">6</option>
+                <option value = "7" selected>7</option>
+                <option value = "8">8</option>
+                <option value = "9">9</option>
+                <option id="gen10" value = "10">10</option>
+                <option id="gen11" value = "11" disabled="true">11</option>
+                <option id="gen12" value = "12" disabled="true">12</option>
+                <option id="gen13" value = "13" disabled="true">13</option>
+                <option id="gen14" value = "14" disabled="true">14</option>
+                <option id="gen15" value = "15" disabled="true">15</option>
+            </select>
+            <label><strong> of: </strong></label>
+            <select id="genorder" onchange="orderChange()">
+                <option value = "1" selected>Ancestors</option>
+                <option value = "2">Descendants</option>
+            </select>
+            <span id="dnaarea" style="display: none;">
+                <label id="dnalabel"><strong>&nbsp;&nbsp;DNA: </strong></label>
+                 <select id="dna">
+                     <option value = "all" selected>All</option>
+                     <option id="maledna" value = "male">Y-DNA</option>
+                     <option id="femaledna" value = "female">mtDNA</option>
+                 </select>
+            </span>
+            <span id="adoptarea">
+                <label id="adoptlabel"><strong>&nbsp;&nbsp;Preference: </strong></label>
+                <select id="adopt">
+                    <option value = "false" selected>Biological</option>
+                    <option value = "true">Adoptive</option>
+                </select>
+            </span>
+        </div>
+    </td><td align="right" valign="top">
+
+        <div>
+            <table>
+                <tr>
+                    <td>
+                        <div style="display:block; margin-top: 8px; padding-right: 6px;">
+                            <button id="searchbutton" align="right" onClick="goGraph();" class="cta cta-green">Build Graph</button>
+                        </div>
+                    </td>
+                    <td>
+                        <div style="display:block; margin-top: 8px; padding-left: 6px; padding-right: 5px;">
+                            <button id="saveimage" align="right" onClick="toggleSave();" class="cta cta-blue">Save Graph</button>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </td></tr></table>
+
+    <div class="separator" style="margin:0.1em 0;margin-top:0.5em;"></div>
+    <div id="overlay">
+        <div class="shadoweffect-business">
+            <img src="/static/images/cancel.png" align="right" style="margin-top: -22px; margin-right: -22px; float: right; cursor: pointer;" onclick="toggleSave();">
+            <h2 style="padding-top: 5px;">Save the Graph</h2>
+            <br/><p><h3>Scale Factor:
+            <select id = "scale">
+                <option value = ".5">½ x</option>
+                <option value = "1" selected>1x</option>
+                <option value = "2">2x</option>
+                <option value = "3">3x</option>
+            </select>
+            &nbsp;&nbsp;&nbsp;<label id="lsz">Label Size: </label>
+            <select id = "textscale">
+                <option value = "0" selected>Normal Size</option>
+                <option value = "1">Auto Size</option>
+            </select></h3>
+            <br/>
+            <table width="100%" border="1" style="border-color: #000000;"><tr>
+                <td width="50%" style="padding-right: 10px;" align="right"><button id="searchbutton2" style="float: right;" onClick="saveGraph('.pdf');" class="cta cta-yellow">Save as Adobe PDF</button></td>
+                <td width="50%" style="padding-left: 10px;"><button id="searchbutton3" style="float: left;"  onClick="saveGraph('.png');" class="cta cta-yellow">Save as Image PNG</button></td>
+            </tr></table>
+
+        </div>
+    </div>
+    <div id="vis" style="display: none; ">
+        <div id="visspacer" style="height: 61px; display: none; padding-top:5px;padding-bottom: 2px;"></div>
+        <div id="visheader" style="padding-top:8px; padding-bottom: 2px;">
+            <form>
+             <span style="float: right;">
+                 <strong>Labels: </strong>
+                <label>
+                    <input type="radio" name="mode">
+                    Hide</label>
+                <label>
+                    <input type="radio" name="mode" checked>
+                    Show</label>
+                 <select id = "labellimit" onchange="optionChange()">
+                     <option value = "15">All</option>
+                     <option value = "1" selected>1</option>
+                     <option value = "2">2</option>
+                     <option value = "3">3</option>
+                     <option value = "4">4</option>
+                     <option value = "5">5</option>
+                     <option value = "6">6</option>
+                     <option value = "7">7</option>
+                     <option value = "8">8</option>
+                     <option value = "9">9</option>
+                     <option value = "10">10</option>
+                     <option value = "11">11</option>
+                     <option value = "12">12</option>
+                     <option value = "13">13</option>
+                     <option value = "14">14</option>
+
+                 </select>
+                  <label> Generation</label>
+            </span>
+            <span style="float: left;">
+                <strong>Colors: </strong>
+                <label>
+                    <input type="radio" name="colorcode" checked>
+                    Grouping</label>
+                <label>
+                    <input type="radio" name="colorcode">
+                    Status</label>
+                <label>
+                    <input type="radio" name="colorcode">
+                    Gender</label>
+                <label>
+                    <input type="radio" name="colorcode">
+                </label>
+                <select id = "location" onchange="optionChange()" disabled>
+                    <option value = "1" selected>Country - Birth</option>
+                    <option value = "2">Country - Death</option>
+                    <option value = "3">State/Region - Birth</option>
+                    <option value = "4">State/Region - Death</option>
+                </select>
+            </span>
+            </form>
+            <br/><br/>
+
+            <span style="float: right;"><img src="/static/images/zoom_out.png" style="cursor:pointer; margin-top: -3px;"  title="Reset Zoom" alt="Reset Zoom" onclick="resetZoom()"></span>
+            <span style="float: left;"><img src="/static/images/legend.png" style="cursor:pointer; margin-top: -3px;"  title="Color Information" alt="Color Information" onclick="colorHelp()"></span>
+            <span><h3>Click Profile to Zoom-In&nbsp;&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp;Click Center to Zoom-Out&nbsp;&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp;X+Click to Open Profile in New Window</h3></span>
+
+            <div class="slideDownColor" style="margin-top: -2px; padding-bottom: 4px; display: none; width: 94%;">
+                <br/>
+                <div class="shadoweffect-business" style="background: rgba(255, 255, 255, .8);">
+                    <div id="groupcolorhelp" style="display: none;">
+                        <table width="100%" border="1"><tr>
+                            <td><div style="width:16px;height:16px;border:1px solid #000; background-color: #3377ff; margin-right: 7px; float: left;"> </div>Unique Ancestor</td>
+                            <td><div style="width:16px;height:16px;border:1px solid #000; background-color: #ae7bf4; margin-right: 7px; float: left;"> </div>Duplicate Ancestors in the Graph will have the same unique colors.</td>
+                            <td><div style="width:10px;height:16px;border:1px solid #000; background-color: #ff5252; margin-right: 7px; float: left;"> </div>Access Denied</td>
+                        </tr></table>
+                    </div>
+                    <div id="statuscolorhelp" style="display: none;">
+                        <table width="100%" border="1"><tr>
+                            <td><div style="width:16px;height:16px;border:1px solid #000; background-color: #3377ff; margin-right: 7px; float: left;"> </div>Claimed Profile</td>
+                            <td><div style="width:16px;height:16px;border:1px solid #000; background-color: #a5a5a5; margin-right: 7px; float: left;"> </div>Deceased Private</td>
+                            <td><div style="width:16px;height:16px;border:1px solid #000; background-color: #dcdcdc; margin-right: 7px; float: left;"> </div>Living Private</td>
+                            <td><div style="width:16px;height:16px;border:1px solid #000; background-color: #7cf57a; margin-right: 7px; float: left;"> </div>Public Profile</td>
+                            <td><div style="width:16px;height:16px;border:1px solid #000; background-color: #f3ad33; margin-right: 7px; float: left;"> </div>Master Profile</td>
+                            <td><div style="width:16px;height:16px;border:1px solid #000; background-color: #f2ff66; margin-right: 7px; float: left;"> </div>Parent Conflict</td>
+                            <td><div style="width:10px;height:16px;border:1px solid #000; background-color: #ff5252; margin-right: 7px; float: left;"> </div>Access Denied</td>
+                        </tr></table>
+                    </div>
+                    <div id="gendercolorhelp" style="display: none;">
+                        <table width="100%" border="1"><tr>
+                            <td><div style="width:16px;height:16px;border:1px solid #000; background-color: #66a8ff; margin-right: 7px; float: left;"> </div>Male</td>
+                            <td><div style="width:16px;height:16px;border:1px solid #000; background-color: #f2aae5; margin-right: 7px; float: left;"> </div>Female</td>
+                            <td><div style="width:16px;height:16px;border:1px solid #000; background-color: #7cf57a; margin-right: 7px; float: left;"> </div>Unknown</td>
+                            <td><div style="width:10px;height:16px;border:1px solid #000; background-color: #ff5252; margin-right: 7px; float: left;"> </div>Access Denied</td>
+                        </tr></table>
+                    </div>
+                    <div id="countrycolorhelp" style="display: none;">
+                        <table width="100%" border="1"><tr>
+                            <td><div style="width:16px;height:16px;border:1px solid #000; background-color: #a5a5a5; margin-right: 7px; float: left;"> </div>Unknown Location</td>
+                            <td><div style="width:16px;height:16px;border:1px solid #000; background-color: #3377ff; margin-right: 7px; float: left;"> </div>Living Profile (Death Locations)</td>
+                            <td><div style="width:16px;height:16px;border:1px solid #000; background-color: #ae7bf4; margin-right: 7px; float: left;"> </div>Identified locations are assigned a unique color.</td>
+                            <td><div style="width:10px;height:16px;border:1px solid #000; background-color: #ff5252; margin-right: 7px; float: left;"> </div>Access Denied</td>
+                        </tr></table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <div style="text-align: center; font-size: 12px; display: none;" id="bottomtext"><span id="bottomname">Ancestor</span> Count: <span id="bottomcount">0</span></div>
+</center>
+<div id="footspacer" style="display: block;"><br/>
+    <div class="shadoweffect-business">
+        <div style="padding-left: 30px; padding-right: 30px;">The HistoryLink Ancestor Graph is based on the excellent desktop visualization tool
+            <a href="https://www.geni.com/projects/Complete-ancestors-trees-iSeeTrees/11399" target="_blank">iSeeTrees</a>.  Check it out if you're
+            looking for additional graphing features.&nbsp;&nbsp;&mdash;&nbsp;&nbsp;Retrieving ancestor data could involve <a
+                    href="https://www.youtube.com/watch?v=BhtgINeaJWg&feature=share" target="_blank">exponential queries</a>, please
+            be patient. The page will update automatically with progress every 5 seconds.
+        </div>
+    </div>
+</div>
+<br/>
+<div class="shadoweffect-business" id="treecontainer" style="text-align: center; display: none;"><h2 style="padding-bottom: 5px;">
+    Tree Listing<input type="button" value="Print" style="margin-left: 10px;" onclick="PrintElem('#treelist')"/></h2>
+    <div class="separator" style="margin:0.1em 0;margin-top:0.5em; padding: 5px;"></div>
+    <div id="treelist" class="tree"></div>
+</div>
+<script>
+    function getUrlParameter(sParam)
+    {
+        var sPageURL = window.location.search.substring(1);
+        var sURLVariables = sPageURL.split('&');
+        for (var i = 0; i < sURLVariables.length; i++)
+        {
+            var sParameterName = sURLVariables[i].split('=');
+            if (sParameterName[0] == sParam)
+            {
+                return sParameterName[1];
+            }
+        }
+        return "";
+    }
+    var direction = getUrlParameter("type");
+    var colortype = getUrlParameter("color");
+    if (direction === "Descendant" || direction === "descendant" || direction === "Descendent" || direction === "descendent") {
+        document.getElementById('genorder').selectedIndex = 1;
+    }
+    if (colortype === "Status" || colortype === "status") {
+        document.getElementsByName('colorcode')[1].checked = true;
+    } else if (colortype === "Gender" || colortype === "gender") {
+        document.getElementsByName('colorcode')[2].checked = true;
+    } else if (colortype === "Location" || colortype === "location") {
+        document.getElementsByName('colorcode')[3].checked = true;
+    }
+
+    var colorcount = 0;
+    var running = false;
+    var matchcount = 0;
+    function goGraph() {
+        if (running) {
+            stopGraph();
+        } else {
+            runGraph();
+        }
+    }
+
+    window.onunload = function () {
+        $.post('/graphcount');
+    };
+    $(window).scroll(function(){
+       adjustScroll();
+    });
+    setInterval(function () {
+        if (running) {
+            $.ajax({
+                url: "/graphcount",
+                cache: false,
+                dataType: "html",
+                success: function(data) {
+                    eval(data);
+                }
+            });
+        }
+    }, 5000);
+    var downloadURL = function downloadURL(url) {
+        var hiddenIFrameID = 'hiddenDownloader',
+            iframe = document.getElementById(hiddenIFrameID);
+        if (iframe === null) {
+            iframe = document.createElement('iframe');
+            iframe.id = hiddenIFrameID;
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+        }
+        iframe.src = url;
+    };
+    function adjustScroll() {
+        var pbar = $('#outerheader').outerHeight();
+        var spos = $(window).scrollTop();
+        if (running) {
+            pbar +=  25;
+        }
+        var topposition = $('#vis').offset().top - pbar;
+        if (spos > topposition && document.getElementById("visspacer").style.display == "none") {
+            $('#visspacer').height($('#visheader').outerHeight()-3);
+        }
+
+        $('.scrolling').css('top', pbar);
+        $('#visheader').toggleClass('scrolling', spos > topposition);
+        $('#visspacer').toggle(spos > topposition);
+    }
+    function toggleSave() {
+        if (document.getElementById("vis").style.display == "block") {
+            el = document.getElementById("overlay");
+            el.style.visibility = (el.style.visibility == "visible") ? "hidden" : "visible";
+        } else {
+            alert("No graph has been generated yet.  Build the graph and try again.");
+        }
+    }
+    function saveGraph(type) {
+        toggleSave();
+
+        //"<svg>" + document.getElementsByTagName("svg")[0].innerHTML +  "</svg>";  Not working in Chrome
+        var txtscalevar = document.getElementById("textscale").value;
+        var labelson = document.getElementsByName('mode')[1].checked;
+        if (txtscalevar == 1 && labelson) {
+            setLabels(true);
+            optionChange();
+        }
+        var svgdata = document.getElementById("vis").innerHTML.split("<svg ");
+        if (txtscalevar == 1 && labelson) {
+            setLabels(false);
+            optionChange();
+        }
+        if (svgdata.length > 1) {
+            $("body").addClass("wait");
+            var svgimg = '<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg" ' + svgdata[1];
+            var scale = document.getElementById("scale").value;
+            var args = "?profile={{userid}}&type=" + type + "&scale=" + scale;
+            var timeout = 1500;
+            if (parseFloat(scale) > 1) {
+                timeout = timeout * parseInt(scale);
+            }
+            $.post("/graph" + args, svgimg, function( data ) {
+                setTimeout(function() {
+                    $("body").removeClass("wait");
+                    downloadURL('/graphrender' + args);
+                }, timeout);
+
+            });
+        } else {
+            alert("Problem saving graph - No data found.");
+        }
+
+    }
+
+    function stopGraph() {
+        running = false;
+        if (document.getElementById("visspacer").style.display == "block") {
+            var pbar = 7 + $('#outerheader').outerHeight();
+            $('.scrolling').css('top', pbar);
+        }
+
+        $('.progress1').slideToggle();
+        $('.progress2').slideToggle();
+        //document.getElementById("processing").innerHTML = '';
+
+        document.getElementById("searchbutton").setAttribute("class", "cta cta-green");
+        document.getElementById("searchbutton").innerHTML = "Build Graph";
+        setTimeout('fullStop()', 1000);
+    }
+
+    function fullStop() {
+        $.post('/graphcount?status=stop');
+    }
+    function runGraph() {
+        if (running == false) {
+            matchcount = 0;
+            var limitval = "&limit=" + document.getElementById("genlimit").value;
+            var orderval = "&order=" + document.getElementById("genorder").value;
+            var dnaval = "&dna=" + document.getElementById("dna").value;
+            var adopt = "&adopt=" + document.getElementById("adopt").value;
+            running = true;
+            document.getElementById("statustext").innerHTML = "Researching:&nbsp;&nbsp;Generation 1 <img src='/static/images/processing1.gif' style='padding-left: 15px;'><img src='/static/images/stop.png' style='padding-left: 10px; padding-right: 10px; vertical-align: bottom; cursor:pointer;' title='stop' alt='stop' onclick='stopGraph()'>";
+
+            $('.progress1').slideToggle();
+            $('.progress2').slideToggle();
+
+            document.getElementById("searchbutton").setAttribute("class", "cta cta-red");
+            document.getElementById("searchbutton").innerHTML = "Stop Build";
+            $.ajax({
+                url: "/graphcount?status=start",
+                cache: false,
+                dataType: "html",
+                success: function(data) {
+                    eval(data);
+                }
+            });
+            $.ajax({
+                url: "/graphprocess?profile={{userid}}" + limitval + orderval + dnaval + adopt,
+                cache: false,
+                dataType: "html"
+            });
+        }
+    }
+
+    function colorHelp() {
+        $('.slideDownColor').slideToggle()
+    }
+    function changeOptions() {
+        $('.slideDownOptions').slideToggle();
+    }
+    function limitHelp() {
+        $('.slideDownLimit').slideToggle();
+
+    }
+    function submitProfile() {
+        var profile_id = document.getElementById("userfield").value.toString().trim();
+        if (profile_id.length > 0) {
+            var startid = profile_id.toLowerCase();
+            profile_id = decodeURIComponent(profile_id).trim();
+            if (profile_id.indexOf("&resolve=") != -1) {
+                profile_id = profile_id.substring(profile_id.lastIndexOf('#') + 1);
+            }
+            if (profile_id.indexOf("profile-") != -1) {
+                profile_id = profile_id.substring(profile_id.lastIndexOf('/') + 1);
+            }
+            if (profile_id.indexOf("#/tab") != -1) {
+                profile_id = profile_id.substring(0, profile_id.lastIndexOf('#/tab'));
+            }
+            if (profile_id.indexOf("/") != -1) {
+                //Grab the GUID from a URL
+                profile_id = profile_id.substring(profile_id.lastIndexOf('/') + 1);
+            }
+            if (profile_id.indexOf("?through") != -1) {
+                //In case the copy the profile url by navigating through another 6000000002107278790?through=6000000010985379345
+                //But skip 6000000029660962822?highlight_id=6000000029660962822#6000000028974729472
+                profile_id = "profile-g" + profile_id.substring(0, profile_id.lastIndexOf('?'));
+            }
+            if (profile_id.indexOf("?from_flash") != -1) {
+                profile_id = "profile-g" + profile_id.substring(0, profile_id.lastIndexOf('?'));
+            }
+            if (profile_id.indexOf("?highlight_id") != -1) {
+                profile_id = "profile-g" + profile_id.substring(profile_id.lastIndexOf('=') + 1, profile_id.length);
+            }
+            if (profile_id.indexOf("#") != -1) {
+                if (profile_id.contains("html5")) {
+                    profile_id = "profile-" + profile_id.substring(profile_id.lastIndexOf('#') + 1, profile_id.length);
+                } else {
+                    //In case the copy the profile url by navigating in tree view 6000000001495436722#6000000010985379345
+                    profile_id = "profile-g" + profile_id.substring(profile_id.lastIndexOf('#') + 1, profile_id.length);
+                }
+            }
+            var isnum = /^\d+$/.test(profile_id);
+            if (isnum) {
+                if (profile_id.length > 16) {
+                    profile_id = "profile-g" + profile_id;
+                } else if (startid.contains("www.geni.com/people") || startid.contains("www.geni.com/family-tree")) {
+                    profile_id = "profile-g" + profile_id;
+                } else {
+                    profile_id = "profile-" + profile_id;
+                }
+            }
+            if (profile_id.indexOf("profile-") != -1 && profile_id !== "profile-g") {
+                window.location.href = "/graph?profile=" + profile_id;
+            } else {
+                alert("This does not appear to be a valid Geni profile id.\nPlease use the numeric id or the full URL of the profile.");
+            }
+        }
+
+    }
+    function entsub(e, form) {
+        var key = e.keyCode || e.which;
+        if (key == 13) {
+            submitProfile();
+        }
+    }
+    function changeUser() {
+        $('.slideDownUser').slideToggle();
+    }
+    window.onload = function () {
+        orderChange();
+        $.post('/graphcount');
+    };
+    $(document).mousemove(function(event){
+        var mouseX = event.pageX-$(document).scrollLeft();
+        var mouseY = event.pageY-$(document).scrollTop();
+        if ($(document).width()-290 < mouseX) {
+            $('#col2').css({
+                left:   mouseX-290
+            });
+        } else {
+            $('#col2').css({
+                left:   mouseX+15
+            });
+        }
+        if ($(window).height()-100 < mouseY) {
+            $('#col2').css({
+                top:   mouseY-80
+            });
+        } else {
+            $('#col2').css({
+                top:   mouseY+15
+            });
+        }
+    });
+    var linkkey = false;
+    $(document).keydown(function (e) {
+        if (linkkey == false) {
+            if (e.keyCode == 16 || e.keyCode == 88) {
+                linkkey = true;
+                setCursor();
+            }
+        }
+    });
+    $(document).keyup(function (e) {
+        if (linkkey == true) {
+
+            if (e.keyCode == 16 || e.keyCode == 88 || e.metaKey) {
+                linkkey = false;
+                setCursor();
+            }
+        }
+        //Close save dialog when the ESC is pressed
+        if(e.which == '27'){
+            el = document.getElementById("overlay");
+            el.style.visibility = "hidden";
+        }
+    });
+    var content = d3.select("#col2");
+</script>
+<script>
+    var width = 900;
+    var height = 900;
+    var radius = 50 * Math.max(width, height) / 100;
+    var x = d3.scale.linear().range([0, 2 * Math.PI]);
+    var y = d3.scale.pow().exponent(1.3).domain([0, 1]).range([0, radius]);
+    var padding = 5;
+    var duration = 1500;
+
+    var color = d3.scale.category20();
+    //var color = d3.scale.linear().domain([-100, 126]).range(["#EFEDF5", "#756BB1"]);
+    //var color = d3.scale.threshold().domain([-100, 0, 126]).range(["red", "white", "blue"]);
+    //var color = d3.scale.log().domain([0, 900000000]).range(["red", "green"]);
+
+    var div = d3.select("#vis");
+
+
+
+    //div.select("img").remove();
+
+    var svg = d3.select("#vis")
+            .append("svg")
+            .attr("width", width + padding * 2)
+            .attr("height", height + padding * 2)
+            .append("g")
+            .attr("transform", "translate(" + [radius + padding, radius + padding] + ")");
+
+    //div.append("p")
+    // .attr("id", "intro")
+    //.text("Click to zoom!");
+
+    var partition = d3.layout.partition()
+            .value(function(d)
+            {
+                return 50;//d.appropriation14;
+            });
+
+    var arc = d3.svg.arc()
+            .startAngle(function(d)
+            {
+                return Math.max(0, Math.min(2 * Math.PI, x(d.x)));
+            })
+
+            .endAngle(function(d)
+            {
+                return Math.max(0, Math.min(2 * Math.PI, x(d.x + d.dx)));
+            })
+
+            .innerRadius(function(d)
+            {
+                return Math.max(0, y(d.y));
+            })
+
+            .outerRadius(function(d)
+            {
+                var or = y(d.y + d.dy);
+                if (d.ad) {
+                    var xor = radius * d.dy * .20;
+                    or = y(d.y) + xor;
+                    //y(d.y) + ((or - y(d.y)) * -.15); produces a ring on the inside of the person
+                    //y(d.y) + ((or - y(d.y)) * .3); produces a ring on the outside
+                    ///(or + y(d.y)) * .46;  produces a ring on the outside
+                }
+                return Math.max(0, or);
+            });
+
+    // d3.json("budget.json", function(json) {
+    //   var nodes = partition.nodes({children: json});
+
+
+    var minY = 0;
+    var maxY = 2;
+
+    var malegradient = svg
+            .append("linearGradient")
+            .attr("y1", minY)
+            .attr("y2", maxY)
+            .attr("x1", "0")
+            .attr("x2", "0")
+            .attr("id", "malegradient");
+
+
+    malegradient
+            .append("stop")
+            .attr("offset", "0")
+            .attr("stop-color", "#8cbeff");
+
+    malegradient
+            .append("stop")
+            .attr("offset", "0.5")
+            .attr("stop-color", "#66a8ff");
+
+    var femalegradient = svg
+            .append("linearGradient")
+            .attr("y1", minY)
+            .attr("y2", maxY)
+            .attr("x1", "0")
+            .attr("x2", "0")
+            .attr("id", "femalegradient");
+
+
+    femalegradient
+            .append("stop")
+            .attr("offset", "0")
+            .attr("stop-color", "#f2c2e9");
+
+    femalegradient
+            .append("stop")
+            .attr("offset", "0.5")
+            .attr("stop-color", "#f2aae5");
+
+    var singlegradient = svg
+            .append("linearGradient")
+            .attr("y1", minY)
+            .attr("y2", maxY)
+            .attr("x1", "0")
+            .attr("x2", "0")
+            .attr("id", "singlegradient");
+
+
+    singlegradient
+            .append("stop")
+            .attr("offset", "0")
+            .attr("stop-color", "#3377ff");
+
+    singlegradient
+            .append("stop")
+            .attr("offset", "0.5")
+            .attr("stop-color", "#0d5eff");
+
+    var publicgradient = svg
+            .append("linearGradient")
+            .attr("y1", minY)
+            .attr("y2", maxY)
+            .attr("x1", "0")
+            .attr("x2", "0")
+            .attr("id", "publicgradient");
+
+
+    publicgradient
+            .append("stop")
+            .attr("offset", "0")
+            .attr("stop-color", "#7cf57a");
+
+    publicgradient
+            .append("stop")
+            .attr("offset", "0.5")
+            .attr("stop-color", "#44f340");
+
+    var mastergradient = svg
+            .append("linearGradient")
+            .attr("y1", minY)
+            .attr("y2", maxY)
+            .attr("x1", "0")
+            .attr("x2", "0")
+            .attr("id", "mastergradient");
+
+
+    mastergradient
+            .append("stop")
+            .attr("offset", "0")
+            .attr("stop-color", "#ebb964");
+
+    mastergradient
+            .append("stop")
+            .attr("offset", "0.5")
+            .attr("stop-color", "#f3ad33");
+
+    var privategradient = svg
+            .append("linearGradient")
+            .attr("y1", minY)
+            .attr("y2", maxY)
+            .attr("x1", "0")
+            .attr("x2", "0")
+            .attr("id", "privategradient");
+
+    privategradient
+            .append("stop")
+            .attr("offset", "0")
+            .attr("stop-color", "#a5a5a5");
+
+    privategradient
+            .append("stop")
+            .attr("offset", "0.5")
+            .attr("stop-color", "#9b9b9b");
+
+    var livinggradient = svg
+            .append("linearGradient")
+            .attr("y1", minY)
+            .attr("y2", maxY)
+            .attr("x1", "0")
+            .attr("x2", "0")
+            .attr("id", "livinggradient");
+
+    livinggradient
+            .append("stop")
+            .attr("offset", "0")
+            .attr("stop-color", "#dcdcdc");
+
+    livinggradient
+            .append("stop")
+            .attr("offset", "0.5")
+            .attr("stop-color", "#d2d2d2");
+
+    var conflictgradient = svg
+            .append("linearGradient")
+            .attr("y1", minY)
+            .attr("y2", maxY)
+            .attr("x1", "0")
+            .attr("x2", "0")
+            .attr("id", "conflictgradient");
+
+
+    conflictgradient
+            .append("stop")
+            .attr("offset", "0")
+            .attr("stop-color", "#f6ff66");
+
+    conflictgradient
+            .append("stop")
+            .attr("offset", "0.5")
+            .attr("stop-color", "#efff40");
+
+    var deniedgradient = svg
+            .append("linearGradient")
+            .attr("y1", minY)
+            .attr("y2", maxY)
+            .attr("x1", "0")
+            .attr("x2", "0")
+            .attr("id", "deniedgradient");
+
+
+    deniedgradient
+            .append("stop")
+            .attr("offset", "0")
+            .attr("stop-color", "#ff6666");
+
+    deniedgradient
+            .append("stop")
+            .attr("offset", "0.5")
+            .attr("stop-color", "#ff4040");
+
+    var blankgradient = svg
+            .append("linearGradient")
+            .attr("y1", minY)
+            .attr("y2", maxY)
+            .attr("x1", "0")
+            .attr("x2", "0")
+            .attr("id", "blankgradient");
+
+
+    blankgradient
+            .append("stop")
+            .attr("offset", "0")
+            .attr("stop-color", "#ebebeb");
+
+    blankgradient
+            .append("stop")
+            .attr("offset", "0.5")
+            .attr("stop-color", "#f0f0f0");
+
+    var currentdepth = 0;
+    var currentobject = 0;
+    var currentid = 0;
+    var rootobject = 0;
+    var mousedepth = -1;
+    function updateGraph() {
+        $.ajax({
+            url: "/graphlist?profile={{userid}}",
+            cache: false,
+            dataType: "html",
+            success: function(data) {
+                if (data.trim().length > 0) {
+                    document.getElementById("footspacer").style.display = "none";
+                    document.getElementById("vis").style.display = "block";
+                    document.body.style.cursor = "wait";
+                    var jsondata = JSON.parse(data);
+                    buildGraph(jsondata);
+                    document.getElementById("treelist").innerHTML = renderJSON(jsondata);
+                    document.getElementById("treecontainer").style.display = "block";
+                    adjustScroll();
+                    setCursor();
+                }
+            }
+        });
+    }
+    var root;
+    function buildGraph(jsondata) {
+
+        root = jsondata;
+
+
+        //alert(document.getElementById("vis").innerHTML);
+
+        div.select("svg").selectAll("path").remove();
+
+        var ocount = -1;
+        var dcount = [];
+        // var path = vis.selectAll("path").data(nodes);
+        //   path.enter().append("path")
+        var path = svg.selectAll("path")
+                .data(partition.nodes(root))
+                .enter()
+                .append("path");
+
+        path
+                .attr("id", function(d, i)
+                {
+                    if (d.gd != 0) {
+                        ocount++;
+                        if (dcount[d.depth] !== undefined) {
+                            dcount[d.depth] = dcount[d.depth] + 1;
+                        } else {
+                            dcount[d.depth] = 1;
+                        }
+                    }
+
+                    if (i == 0) {
+                        rootobject = d;
+                    }
+                    if (d.id == currentid) {
+                        currentobject = d;
+                    }
+                    return "path-" + i;
+                });
+
+        path
+                .attr("stroke", "#fff")
+                .attr("d", arc)
+                .attr("fill-rule", "evenodd")
+                .on("click", click)
+                .on("mouseover", mouseover)
+                .on("mouseout", mouseout);
+
+        setLabels(false);
+        optionChange();  //Update colors and text visibility
+        if (currentid != 0) {
+            tweenGraph(0, currentobject);
+        }
+        var e = document.getElementById('genorder');
+        if (e.options[e.selectedIndex].value == 2) {
+            document.getElementById('bottomname').innerHTML="Desendant";
+        } else {
+            document.getElementById('bottomname').innerHTML="Ancestor";
+        }
+        document.getElementById('bottomcount').innerHTML=ocount;
+        document.getElementById('bottomtext').style.display='block';
+
+        //click function
+        function click(d)
+        {
+
+            currentid = d.id;
+
+            if (d.gd == 0) {
+
+            } else if (linkkey) {
+                linkkey = false;
+                setCursor();
+                window.open("https://www.geni.com/" + d.id);
+            } else {
+                if(d.depth != currentdepth) {
+                    d3.selectAll("text")
+                            .style("pointer-events", "none")
+                            .style("fill-opacity", 0);
+                    currentdepth = d.depth;
+                    //duration is predefined above at 1500 (1.75 seconds)
+                    tweenGraph(duration, d);
+                    setTimeout(optionChange, duration);
+                }
+            }
+        }
+
+        //mouseover function which will send the values to the legend
+        function mouseover(d)
+        {
+            if (d.name != undefined) {
+                if (d.gd == 0) {
+                    document.body.style.cursor = 'default';
+                    document.getElementById('col2').style.display='none';
+
+                } else {
+                    mousedepth = d.depth;
+                    setCursor();
+                    document.getElementById('col2').style.display='inline';
+                }
+
+                content.selectAll("p").remove();
+                if (d.ad) {
+                    document.body.style.cursor = 'default';
+                    content.append("p")
+                            .attr("id", "current")
+                            .text("Access Denied - Profile Visibility Restricted")
+                } else {
+                    content.append("p")
+                            .attr("id", "current")
+                            .text(d.name);
+
+                    deathdate = "";
+                    if (d.dl != "") {
+                        deathdate = ", Death: " + d.dc + d.dd;
+                    }
+                    content.append("p")
+                            .text("Birth: " + d.bc + d.bd + deathdate);
+                    content.append("p")
+                            .text("Birth Place: " + d.bl);
+                    if (d.dl != "") {
+                        content.append("p")
+                                .text("Death Place: " + d.dl)
+                    }
+                }
+            }
+        }
+
+        //mouseout function which removes the values and replaces them with a blank space
+        function mouseout(d)
+        {
+            mousedepth = -1;
+            content.html(' ');
+            document.getElementById('col2').style.display='none';
+            document.body.style.cursor = 'default';
+        }
+        if (currentid == 0) {
+            resetZoom();
+        }
+        if (running) {
+            for (xc in dcount) {
+                if (dcount[xc] > 1000) {
+                    stopGraph();
+                    setTimeout(function() { alert("HistoryLink has reached the maximum descendants it can effectively graph.\nThe program will stop researching - Try again at a lower point in the tree."); }, 1);
+                    break;
+                }
+            }
+        }
+    }
+
+    function setCursor() {
+        if (mousedepth == -1) {
+            document.body.style.cursor = "default";
+        }
+        else if (linkkey) {
+            document.body.style.cursor = "pointer";
+        }
+        else if (mousedepth == 0 || mousedepth == currentdepth-1) {
+            //Cursors loaded twice because IE doesn't support CSS3 standard "9 10" that centers the midpoint
+            //The cur file type can define the hotspot, but Chrome ignores it, so we get both entries.
+            document.body.style.cursor = "url(/static/images/zoomout.cur), default";
+            document.body.style.cursor = "url(/static/images/zoomout.cur) 9 10, default";
+        } else {
+            document.body.style.cursor = "url(/static/images/zoomin.cur), default";
+            document.body.style.cursor = "url(/static/images/zoomin.cur) 9 10, default";
+        }
+    }
+
+    function resetZoom() {
+        currentid = rootobject.id;
+        currentdepth = 0;
+        tweenGraph(duration, rootobject);
+        optionChange();
+    }
+
+    function setLabels(scaleval) {
+        div.select("svg").selectAll("text").remove();
+        //add text
+        var text = svg.selectAll("text")
+                .data(partition.nodes(root));
+
+        var textEnter = text
+                .enter()
+                .append("text")
+            //starting opacity
+            //hides all those but the inner ring
+                .style("pointer-events", "none")
+            //color fill
+            //#000000 is black
+                .style("font-size", "10px")
+                .style("fill", "#000000")
+                .attr("text-anchor", function (d) {
+                    return x(d.x + d.dx / 2) > Math.PI ? "end" : "start";
+                })
+
+                .attr("dy", ".2em")
+            //checks for multiline names
+                .attr("transform", function (d) {
+                    var textscale = 1;
+                    if (scaleval) {
+                        var arcwidth = radius * d.dy;
+                        textscale = Math.min(arcwidth / (d.name.visualLength()), 1);
+                    }
+
+                    var multiline = (d.name || "")
+                            .split(" ")
+                            .length > 1.5, angle = x(d.x + d.dx / 2) * 180.45 / Math.PI - 90, rotate = angle + ( multiline ? -.5 : 0);
+
+                    return "rotate(" + rotate + ")translate(" + (y(d.y) + padding) + ")rotate(" + (angle > 90 ? -180 : 0) + ")scale(" + textscale + ")";
+
+                });
+
+        if (scaleval) {
+            textEnter
+                    .append("tspan")
+                    .attr("x", 0)
+                    .text(function(d)
+                    {
+                        return d.depth ? d.name : "";
+                    });
+        } else {
+
+
+            //1st row of text
+            textEnter
+                    .append("tspan")
+                    .attr("x", 0)
+                    .text(function(d)
+                    {
+                        return textformat(d, 0);
+                    });
+
+            //2nd row of text
+            textEnter
+                    .append("tspan")
+                    .attr("x", 0)
+                    .attr("dy", ".9em")
+                    .text(function(d)
+                    {
+                        return textformat(d, 1);
+                    });
+
+            //3rd row
+            textEnter
+                    .append("tspan")
+                    .attr("x", 0)
+                    .attr("dy", ".9em")
+                    .text(function(d)
+                    {
+                        return textformat(d, 2);
+                    });
+
+            //fourth row (if necessary)
+            textEnter
+                    .append("tspan")
+                    .attr("x", 0)
+                    .attr("dy", ".9em")
+                    .text(function(d)
+                    {
+                        return textformat(d, 3);
+                    });
+        }
+
+    }
+
+    function textformat(d, v) {
+        var arcwidth = y(d.y + d.dy)-y(d.y);
+        if (d.name.visualLength() > arcwidth) {
+            txt = d.name.split(" ");
+            if (txt.length > 1 && txt.length > v) {
+                var newtext = new Array();
+                newtext[0] = txt[0];
+                var newid = 0;
+                for (var i = 1; i < txt.length; i++) {
+                    var temp = newtext[newid] + txt[i];
+                    if (temp.visualLength() < arcwidth) {
+                        newtext[newid] = temp;
+                    } else {
+                        newid = newid + 1;
+                        newtext[newid] = txt[i]
+                    }
+                }
+                if (newtext.length > v) {
+                    return d.depth ? newtext[v] : "";
+                }
+
+            } else {
+                if (v == 0) {
+                    return d.depth ? d.name : "";
+                }
+            }
+        } else {
+            if (v == 0) {
+                return d.depth ? d.name : "";
+            }
+        }
+
+    }
+
+    function tweenGraph(dur, d) {
+
+        var path = svg.selectAll("path");
+
+
+        path
+                .transition()
+
+                .duration(dur)
+                .attrTween("d", arcTween(d));
+
+        var text = svg.selectAll("text");
+
+        // Somewhat of a hack as it relies on arcTween updating the scales.
+        text
+                .style("visibility", function(e)
+                {
+                    return isParentOf(d, e) ? null : d3.select(this).style("visibility");
+                })
+
+
+                .transition()
+                .duration(dur)
+                .attrTween("text-anchor", function(d)
+                {
+                    return function()
+
+                    {
+                        return x(d.x + d.dx / 2) > Math.PI ? "end" : "start";
+                    };
+                })
+
+                .attrTween("transform", function(d)
+                {
+                    var multiline = (d.name || "")
+                            .split(" ")
+                            .length > 1.5;
+
+                    return function()
+                    {
+                        var angle = x(d.x + d.dx / 2) * 180 / Math.PI - 90, rotate = angle + ( multiline ? -.5 : 0);
+                        return "rotate(" + rotate + ")translate(" + (y(d.y) + padding) + ")rotate(" + (angle > 90 ? -180 : 0) + ")";
+                    };
+                })
+
+            //.style("fill-opacity", function(e)
+            //{
+            //	return isParentOf(d, e) ? 1 : 0;
+            //})
+            //.style("fill-opacity", function(d)
+            //{
+            //if the depth is 1, innermost, then it's seen
+            //		if (d.depth === 1)
+            //		{
+            //			return 1;
+            //		}
+
+            //else if (d.depth == 2 && d.children)
+            //{
+            //	return 1;
+            //}
+            //else the depth is not one, then it's hidden
+            //		else
+            //		{
+            //			return 0;
+            //		}
+            //})
+
+                .each("end", function(e)
+                {
+                    d3.select(this)
+                            .style("visibility", isParentOf(d, e) ? null : "hidden");
+                });
+    }
+
+    d3.selectAll("input").on("change", function change()
+    {
+        optionChange();
+    });
+
+    function textVisible(d) {
+        if (document.getElementsByName('mode')[1].checked)
+        {
+            labeldepth = parseInt(document.getElementById("labellimit").value);
+            //if the depth is 1, innermost, then it's seen
+            if (d.depth == 0) {
+                return 0;
+            }
+            else if (d.depth == currentdepth || (d.depth > currentdepth && d.depth <= currentdepth+labeldepth))
+            {
+                return 1;
+            }
+            //else the depth is not one, then it's hidden
+            else
+            {
+                return 0;
+            }
+        }
+        else if (document.getElementsByName('mode')[0].checked) {
+            return 0;
+        }
+    }
+    var rcolor = new RColor;
+    rcolor.hue = 1.118;
+    //var colorslist = new Array();
+    function getColor(d) {
+        if (document.getElementsByName('colorcode')[2].checked) {
+            document.getElementById('groupcolorhelp').style.display = "none";
+            document.getElementById('statuscolorhelp').style.display = "none";
+            document.getElementById('countrycolorhelp').style.display = "none";
+            document.getElementById('gendercolorhelp').style.display = "block";
+
+            if (d.gd == 0) {
+                return "url(#blankgradient)";
+            } else if (d.ad) {
+                return "url(#deniedgradient)";
+            } else if (d.gd == 1) {
+                return "url(#femalegradient)";
+            } else if (d.gd == 2) {
+                return "url(#malegradient)";
+            } else {
+                return "url(#publicgradient)";
+            }
+        }
+        else if (document.getElementsByName('colorcode')[0].checked) {
+            document.getElementById('statuscolorhelp').style.display = "none";
+            document.getElementById('gendercolorhelp').style.display = "none";
+            document.getElementById('countrycolorhelp').style.display = "none";
+            document.getElementById('groupcolorhelp').style.display = "block";
+
+            if (d.gd == 0) {
+                return "url(#blankgradient)";
+            } else if (d.ad) {
+                return "url(#deniedgradient)";
+            } else if (d.gp === "") {
+                return "url(#singlegradient)";
+            } else {
+                return buildGradient(d.gp);
+            }
+        }
+        else if (document.getElementsByName('colorcode')[1].checked) {
+            document.getElementById('gendercolorhelp').style.display = "none";
+            document.getElementById('groupcolorhelp').style.display = "none";
+            document.getElementById('countrycolorhelp').style.display = "none";
+            document.getElementById('statuscolorhelp').style.display = "block";
+
+            if (d.gd == 0) {
+                return "url(#blankgradient)";
+            }
+            else if (d.ad) {
+                return "url(#deniedgradient)";
+            }
+            else if (d.pc) {
+                return "url(#conflictgradient)";
+            }
+            else if (d.mp) {
+                return "url(#mastergradient)";
+            }
+            else if (d.cl) {
+                return "url(#singlegradient)";
+            }
+            else if (d.pb) {
+                return "url(#publicgradient)";
+            }
+            else if (d.lv == 1) {
+                return "url(#livinggradient)";
+            }
+            else {
+                return "url(#privategradient)";
+            }
+
+        } else if (document.getElementsByName('colorcode')[3].checked) {
+            document.getElementById('gendercolorhelp').style.display = "none";
+            document.getElementById('groupcolorhelp').style.display = "none";
+            document.getElementById('statuscolorhelp').style.display = "none";
+            document.getElementById('countrycolorhelp').style.display = "block";
+            locselect = document.getElementById("location").value;
+            /*
+            gradientname = "blankgradient";
+            if (locselect == 3 || locselect == 5) {
+                 if (locselect == 3)  {
+                    locationval1 = d.ct;
+                    locationval2 = d.cd;
+                }  else if (locselect == 6)  {
+                    locationval1 = d.st;
+                    locationval2 = d.sd;
+                }
+                gradientname = "gradient" + locationval1 + "gradient" + locationval2;
+                if ($(gradientname).length == 0) {
+                    buildGradient(locationval1);
+                    buildGradient(locationval2);
+                    color1 = colorslist[parseInt(locationval1)];
+                    color2 = colorslist[parseInt(locationval2)];
+                    var gradient = svg
+                            .append("linearGradient")
+                            .attr("y1", minY)
+                            .attr("y2", maxY)
+                            .attr("x1", "0")
+                            .attr("x2", "0")
+                            .attr("id", gradientname)
+
+                    gradient
+                            .append("stop")
+                            .attr("offset", "0")
+                            .attr("stop-color", color1)
+
+                    gradient
+                            .append("stop")
+                            .attr("offset", "0.5")
+                            .attr("stop-color", color2)
+                }
+                return "url(#" + gradientname +")";
+
+            }*/
+            var locationval = 0;
+            if (locselect == 1) {
+                locationval = d.ct;
+            } else if (locselect == 2) {
+                locationval = d.cd;
+            } else if (locselect == 3)  {
+                locationval = d.st;
+            } else if (locselect == 4)  {
+                locationval = d.sd;
+            }
+            if (d.gd == 0) {
+                return "url(#blankgradient)";
+            } else if (d.ad) {
+                return "url(#deniedgradient)";
+            } else if (d.dl == "" && (locselect == 2 || locselect == 4)) {
+                return "url(#singlegradient)";
+            } else if (locationval == 0) {
+                return "url(#livinggradient)";
+            } else {
+                return buildGradient(locationval);
+            }
+
+        }
+    }
+
+    function buildGradient(locationval) {
+        if (colorcount < parseInt(locationval)-1) {
+            //try to build the colors in order, so the colors are the same
+            buildGradient(parseInt(locationval)-1);
+        }
+        if ($("#gradient" + locationval).length == 0) {
+            colorcount = parseInt(locationval);
+            var color2 = rcolor.get(true);
+            var color1 = rcolor.getAgain(true, 0.42, 0.99);
+            //colorslist[parseInt(locationval)] = color2;
+            var gradient = svg
+                    .append("linearGradient")
+                    .attr("y1", minY)
+                    .attr("y2", maxY)
+                    .attr("x1", "0")
+                    .attr("x2", "0")
+                    .attr("id", "gradient" + locationval);
+
+            gradient
+                    .append("stop")
+                    .attr("offset", "0")
+                    .attr("stop-color", color1);
+
+            gradient
+                    .append("stop")
+                    .attr("offset", "0.5")
+                    .attr("stop-color", color2)
+        }
+        return "url(#gradient" + locationval+")";
+    }
+
+    function orderChange() {
+        var e = document.getElementById('genorder');
+        var type = e.options[e.selectedIndex].innerText;
+        if (type != undefined) {
+            document.getElementById("graphtype").innerText = type.substring(0, type.length-1);
+        }
+        if (e.options[e.selectedIndex].value == 2) {
+            //document.getElementById("dnalabel").style.color = "#000";
+            document.getElementById("dnaarea").style.display = "inline";
+            document.getElementById("adoptarea").style.display = "none";
+            document.getElementById("gen11").disabled = false;
+            document.getElementById("gen12").disabled = false;
+            document.getElementById("gen13").disabled = false;
+            document.getElementById("gen14").disabled = false;
+            document.getElementById("gen15").disabled = false;
+        } else {
+            //document.getElementById("dnalabel").style.color = "#aaa";
+            document.getElementById("dnaarea").style.display = "none";
+            document.getElementById("adoptarea").style.display = "inline";
+            document.getElementById("gen11").disabled = true;
+            document.getElementById("gen12").disabled = true;
+            document.getElementById("gen13").disabled = true;
+            document.getElementById("gen14").disabled = true;
+            document.getElementById("gen15").disabled = true;
+            var egen = document.getElementById('genlimit');
+            var eval = egen.options[egen.selectedIndex].value;
+            if (eval > 10) {
+               document.getElementById("gen10").selected = true;
+            }
+        }
+
+        if ("{{gender}}" == "male") {
+            document.getElementById("femaledna").disabled = true;
+            document.getElementById("maledna").disabled = false;
+        } else if ("{{gender}}" == "female") {
+            document.getElementById("maledna").disabled = true;
+            document.getElementById("femaledna").disabled = false;
+        } else {
+            document.getElementById("maledna").disabled = false;
+            document.getElementById("femaledna").disabled = false;
+        }
+    }
+
+    function optionChange() {
+        if (document.getElementsByName('colorcode')[3].checked) {
+            $('#location').prop('disabled', false);
+        } else {
+            $('#location').prop('disabled', true);
+        }
+        if (document.getElementsByName('mode')[1].checked) {
+            $('#labellimit').prop('disabled', false);
+            $('#textscale').prop('disabled', false);
+            $('#lsz').css("color", "#000");
+        } else {
+            $('#labellimit').prop('disabled', true);
+            $('#textscale').prop('disabled', true);
+            $('#lsz').css("color", "#999");
+        }
+        d3.selectAll("text")
+                .style("pointer-events", "none")
+                .style("fill-opacity", function(d)
+                {
+                    return textVisible(d);
+                });
+
+        d3.selectAll("path")
+                .attr("fill-rule", "evenodd")
+                .attr("fill", function(d)
+                {
+                    return getColor(d);
+                })
+
+    }
+
+
+    function isParentOf(p, c)
+    {
+        if (p === c)
+            return true;
+        if (p.children)
+        {
+            return p.children.some(function(d)
+            {
+                return isParentOf(d, c);
+            });
+        }
+        return false;
+    }
+
+    //to determine the innermost ring
+    //function isInnermost(d)
+    //{
+    //if (d.children)
+    //{
+    //return true;
+    //}
+    //else
+    //{
+    //return false;
+    //}
+    //}
+
+    // function colour(d) {
+    //   if (d.children) {
+    //     // There is a maximum of two children!
+    //     var colours = d.children.map(colour),
+    //         a = d3.hsl(colours[0]),
+    //         b = d3.hsl(colours[1]);
+    //     // L*a*b* might be better here...
+    //     return d3.hsl((a.h + b.h) / 2, a.s * 1.2, a.l / 1.2);
+    //   }
+    //   return d.colour || "#fff";
+    // }
+
+    // Interpolate the scales!
+    function arcTween(d)
+    {
+        var xd = d3.interpolate(x.domain(), [d.x, d.x + d.dx]), yd = d3.interpolate(y.domain(), [d.y, 1]), yr = d3.interpolate(y.range(), [d.y ? 20 : 0, radius]);
+        return function(d, i)
+        {
+            return i ? function(t)
+            {
+                return arc(d);
+            } : function(t)
+            {
+                x.domain(xd(t));
+                y.domain(yd(t)).range(yr(t));
+                return arc(d);
+            };
+        };
+    }
+
+    function maxY(d)
+    {
+        return d.children ? Math.max.apply(Math, d.children.map(maxY)) : d.y + d.dy;
+    }
+
+    // http://www.w3.org/WAI/ER/WD-AERT/#color-contrast
+    function brightness(rgb)
+    {
+        return rgb.r * .299 + rgb.g * .587 + rgb.b * .114;
+    }
+
+    function renderJSON(nodes) {
+        var ol = parseNodes([nodes], false);
+        return ol.innerHTML;
+    }
+
+    function parseNodes(nodes, subnode) { // takes a nodes array and turns it into a <ol>
+        var ol = document.createElement("UL");
+        ol.className = "tree";
+        for(var i=0; i < nodes.length; i++) {
+            if (nodes[i].name !== "") {
+                var last = false;
+                if (subnode) {
+                    if (nodes.length === i+1) {
+                        last = true;
+                    } else if (nodes.length === i+2 && nodes[i+1].name === "") {
+                        last = true;
+                    }
+                }
+                ol.appendChild(parseNode(nodes[i], last));
+            }
+        }
+        return ol;
+    }
+
+    function parseNode(node, last) { // takes a node object and turns it into a <li>
+        var li = document.createElement("LI");
+        var buildstring = (parseInt(node.depth) + 1) + '. <a href="https://www.geni.com/' + node.id + '" target="_blank">' +  node.name + '</a> <span style="font-weight: normal">(';
+        var daterange = "";
+        if (!node.bd.startsWith("yyyy")) {
+            daterange += node.bc + node.bd.substring(0,4);
+        }
+        daterange += " - ";
+        if (!node.dd.startsWith("yyyy")) {
+            daterange += node.dc + node.dd.substring(0,4);
+        }
+        buildstring += daterange + ')';
+
+        li.innerHTML = buildstring;
+        if (last) {
+            li.className = "last";
+        }
+        if(node.children) li.appendChild(parseNodes(node.children, true));
+        return li;
+    }
+
+    function PrintElem(elem)
+    {
+        Popup($(elem).html());
+    }
+
+    function Popup(data)
+    {
+        var mywindow = window.open('', 'Tree Listing', 'height=400,width=600');
+        mywindow.document.write('<html><head><title>Tree Listing</title>');
+        mywindow.document.write('<link type="text/css" rel="stylesheet" href="/static/css/base.css">');
+        /*optional stylesheet*/ //mywindow.document.write('<link rel="stylesheet" href="main.css" type="text/css" />');
+        mywindow.document.write('</head><body style="background-color: white; padding: 10px;" ><div class="tree"');
+        mywindow.document.write(data);
+        mywindow.document.write('</div></body></html>');
+
+        mywindow.document.close(); // necessary for IE >= 10
+        mywindow.focus(); // necessary for IE >= 10
+
+        mywindow.print();
+        mywindow.close();
+
+        return true;
+    }
+</script>
+<span id="ruler" style="fontSize: 10px;"></span>
+{% end %}

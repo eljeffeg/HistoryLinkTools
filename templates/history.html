@@ -1,0 +1,764 @@
+{% extends "base.html" %}
+{% block body %}
+<script type="text/javascript" src="/static/js/swfobject.js"></script>
+<script type="text/javascript" src="/static/js/downloadify.min.js"></script>
+<script language="javascript" type="text/javascript">
+    var running = false;
+    var matchcount = 0;
+
+    window.onunload = function () {
+        $.post('/historycount');
+    }
+    function getBase64Image(img) {
+        // Create an empty canvas element
+        var canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+
+        // Copy the image contents to the canvas
+        var ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+
+        // Get the data-URL formatted image
+        // Firefox supports PNG and JPEG. You could check img.src to
+        // guess the original format, but be aware the using "image/jpg"
+        // will re-encode the image.
+        var dataURL = canvas.toDataURL("image/png");
+
+        return dataURL.replace(/^data:image\/(png|jpg);base64,/, "");
+    }
+    setInterval(function () {
+        if (running) {
+            $.ajax({
+                url: "/historycount",
+                cache: false,
+                dataType: "html",
+                success: function(data) {
+                    eval(data);
+                }
+            });
+        }
+    }, 5000);
+    function goHistory() {
+        if (running) {
+            stopHistory();
+        } else {
+            runHistory();
+        }
+    }
+    function stopHistory() {
+        running = false;
+        $('.progress1').slideToggle();
+        $('.progress2').slideToggle();
+        //document.getElementById("processing").innerHTML = '';
+
+        var statusval = document.getElementById("statustext").innerHTML.split("<");
+        statusval = statusval[0].replace("Researching", "Researched");
+        document.getElementById("statusinfo").innerHTML = statusval;
+        document.getElementById("statustext").innerHTML = "";
+        document.getElementById("searchbutton").setAttribute("class", "cta cta-green");
+        document.getElementById("searchbutton").innerHTML = "Start Search";
+        setTimeout('fullStop()', 1000);
+    }
+
+    function fullStop() {
+        $.post('/historycount?status=stop');
+    }
+    function runHistory() {
+        if (running == false) {
+            var results = document.getElementById("historylistresults").innerHTML;
+            var completeresults = document.getElementById("completeness").innerHTML;
+            var conf = true;
+            if (results.trim().length > 0 || completeresults.trim().length > 0) {
+                conf = confirm("This will clear your current results.  Do you wish to continue?");
+            }
+            if(conf == true){
+                matchcount = 0;
+                document.getElementById("historylistresults").innerHTML = "";
+                var masterval = document.getElementById("mastercheck").checked;
+                var projectval = document.getElementById("projectcheck").checked;
+                var problemval = document.getElementById("problemcheck").checked;
+                var completeval = document.getElementById("completecheck").checked;
+                var siblingval = document.getElementById("siblingcheck").checked;
+                siblingval = !siblingval;
+                var limitck = document.getElementById("limitcheck").checked;
+                var merges = document.getElementById("mergecheck").checked;
+                var followvar = document.getElementById("followcheck").checked;
+                var masterselect = document.getElementById("masterselect").value;
+                var followselect = document.getElementById("followselect").value;
+                var projectselect = document.getElementById("projectselect").value;
+                if (masterval == false && projectval == false && problemval == false && completeval == false && followselect == false) {
+                    alert("No search options are selected.");
+                    return
+                }
+                closeOptions();
+                var limitval = "";
+                if (limitck) {
+                    limitval = "&limit=" + document.getElementById("genlimit").value;
+                }
+                running = true
+                $('.progress1').slideToggle();
+                $('.progress2').slideToggle();
+                document.getElementById("statusinfo").innerHTML = "";
+                document.getElementById("historylistresults").innerHTML = "";
+                document.getElementById("treearea").style.display = "none";
+                document.getElementById("completeness").innerHTML = "";
+                document.getElementById("searchbutton").setAttribute("class", "cta cta-red");
+                document.getElementById("searchbutton").innerHTML = "Stop Search";
+                $.ajax({
+                    url: "/historycount?status=start",
+                    cache: false,
+                    dataType: "html",
+                    success: function(data) {
+                        eval(data);
+                    }
+                });
+                $.ajax({
+                    url: "/historyprocess?profile={{userid}}&master="+masterval+"&project="+projectval+"&follow="+followvar+"&followselect="+followselect+"&complete="+completeval+ "&siblings="+siblingval+"&masterselect="+masterselect+"&projectselect=" +projectselect+ "&merges="+merges+"&problem="+ problemval + limitval,
+                    cache: false,
+                    dataType: "html"
+                });
+            }
+        }
+    }
+    function updateCompleteness() {
+        completeval = document.getElementById("completecheck").checked;
+        if (completeval) {
+            $.ajax({
+                url: "/treecomplete",
+                cache: false,
+                dataType: "html",
+                success: function(data) {
+                    if (data.trim().length > 0) {
+                        document.getElementById("note").style.display = "none";
+                        document.getElementById("pdfcontainer").style.display = "block";
+                        document.getElementById("treearea").style.display = "block";
+                        document.getElementById("completeness").innerHTML = data;
+                    }
+                }
+            });
+        } else {
+            document.getElementById("note").style.display = "none";
+            document.getElementById("pdfcontainer").style.display = "block";
+        }
+    }
+    function updateHistory() {
+        $.ajax({
+            url: "/historylist?profile={{userid}}",
+            cache: false,
+            dataType: "html",
+            success: function(data) {
+                if (data.trim().length > 0) {
+                    document.getElementById("historylistresults").innerHTML = data;
+                }
+            }
+        });
+    }
+    function changeUser() {
+        $('.slideDownUser').slideToggle();
+    }
+    var optionmenu = true;
+    function changeOptions() {
+        $('.slideDownOptions').slideToggle();
+        optionmenu = !optionmenu;
+        if (optionmenu) {
+            $('.slideDownProject').slideUp();
+            $('.slideDownMaster').slideUp();
+            $('.slideDownLimit').slideUp();
+            $('.slideDownProblem').slideUp();
+            $('.slideDownComplete').slideUp();
+            $('.slideDownSiblings').slideUp();
+            $('.slideDownMerges').slideUp();
+            $('.slideDownFollow').slideUp();
+        }
+    }
+    function closeOptions() {
+        $('.slideDownOptions').slideUp();
+        optionmenu = true;
+        $('.slideDownProject').slideUp();
+        $('.slideDownMaster').slideUp();
+        $('.slideDownLimit').slideUp();
+        $('.slideDownProblem').slideUp();
+        $('.slideDownComplete').slideUp();
+        $('.slideDownSiblings').slideUp();
+        $('.slideDownFollow').slideUp();
+        $('.slideDownMerges').slideUp();
+    }
+    function limitHelp() {
+        $('.slideDownProject').slideUp();
+        $('.slideDownProblem').slideUp();
+        $('.slideDownMaster').slideUp();
+        $('.slideDownComplete').slideUp();
+        $('.slideDownSiblings').slideUp();
+        $('.slideDownMerges').slideUp();
+        $('.slideDownFollow').slideUp();
+        $('.slideDownLimit').slideToggle();
+
+    }
+    function masterHelp() {
+        $('.slideDownProject').slideUp();
+        $('.slideDownProblem').slideUp();
+        $('.slideDownLimit').slideUp();
+        $('.slideDownComplete').slideUp();
+        $('.slideDownSiblings').slideUp();
+        $('.slideDownMerges').slideUp();
+        $('.slideDownFollow').slideUp();
+        $('.slideDownMaster').slideToggle();
+    }
+    function projectHelp() {
+        $('.slideDownProblem').slideUp();
+        $('.slideDownMaster').slideUp();
+        $('.slideDownLimit').slideUp();
+        $('.slideDownComplete').slideUp();
+        $('.slideDownSiblings').slideUp();
+        $('.slideDownMerges').slideUp();
+        $('.slideDownFollow').slideUp();
+        $('.slideDownProject').slideToggle();
+    }
+    function problemHelp() {
+        $('.slideDownProject').slideUp();
+        $('.slideDownMaster').slideUp();
+        $('.slideDownLimit').slideUp();
+        $('.slideDownComplete').slideUp();
+        $('.slideDownSiblings').slideUp();
+        $('.slideDownMerges').slideUp();
+        $('.slideDownFollow').slideUp();
+        $('.slideDownProblem').slideToggle();
+    }
+    function completeHelp() {
+        $('.slideDownProject').slideUp();
+        $('.slideDownMaster').slideUp();
+        $('.slideDownLimit').slideUp();
+        $('.slideDownProblem').slideUp();
+        $('.slideDownSiblings').slideUp();
+        $('.slideDownMerges').slideUp();
+        $('.slideDownFollow').slideUp();
+        $('.slideDownComplete').slideToggle();
+    }
+    function siblingHelp() {
+        $('.slideDownProject').slideUp();
+        $('.slideDownMaster').slideUp();
+        $('.slideDownLimit').slideUp();
+        $('.slideDownProblem').slideUp();
+        $('.slideDownComplete').slideUp();
+        $('.slideDownMerges').slideUp();
+        $('.slideDownFollow').slideUp();
+        $('.slideDownSiblings').slideToggle();
+    }
+    function mergeHelp() {
+        $('.slideDownProject').slideUp();
+        $('.slideDownMaster').slideUp();
+        $('.slideDownLimit').slideUp();
+        $('.slideDownProblem').slideUp();
+        $('.slideDownComplete').slideUp();
+        $('.slideDownSiblings').slideUp();
+        $('.slideDownFollow').slideUp();
+        $('.slideDownMerges').slideToggle();
+    }
+    function followHelp() {
+        $('.slideDownProject').slideUp();
+        $('.slideDownMaster').slideUp();
+        $('.slideDownLimit').slideUp();
+        $('.slideDownProblem').slideUp();
+        $('.slideDownComplete').slideUp();
+        $('.slideDownSiblings').slideUp();
+        $('.slideDownMerges').slideUp();
+        $('.slideDownFollow').slideToggle();
+    }
+    var followwarning = false;
+    function handleChange() {
+        var master = document.getElementById("mastercheck");
+        var project = document.getElementById("projectcheck");
+        var problem = document.getElementById("problemcheck");
+        var limit = document.getElementById("limitcheck");
+        var complete = document.getElementById("completecheck");
+        var sibling = document.getElementById("siblingcheck");
+        var merges = document.getElementById("mergecheck");
+        var follow = document.getElementById("followcheck");
+        var note = "";
+        if (follow.checked && limit.checked == false) {
+            limit.checked = true;
+            alert("For your own safety, Limit Search is required when the Follow Public Profiles option is selected.");
+        }
+        if (limit.checked) {
+            document.getElementById("limiticon").style.display = "inline";
+        } else {
+            document.getElementById("limiticon").style.display = "none";
+        }
+        if (sibling.checked) {
+           document.getElementById("siblingicon").style.display = "inline";
+        } else {
+           document.getElementById("siblingicon").style.display = "none";
+        }
+        if (complete.checked) {
+            document.getElementById("completeicon").style.display = "inline";
+        } else {
+            document.getElementById("completeicon").style.display = "none";
+        }
+        if (project.checked) {
+            document.getElementById("projecticon").style.display = "inline";
+            note = "Projects";
+        } else {
+            document.getElementById("projecticon").style.display = "none";
+        }
+        if (follow.checked & followwarning == false) {
+            followwarning = true;
+            alert("**** Warning ****\n\nRunning this option will set your Geni account to follow / unfollow all the profiles in the search path. " +
+                    "If following, the generation count should be something you can manage monitoring. " +
+                    "With exponential ancestors, following 20 generations could result in monitoring over 2 million profiles. " +
+                    "Also consider using the excluding siblings to reduce the profiles.\n\n" +
+                    "See the option's help for additional information on following profiles.")
+            document.getElementById("followicon").style.display = "inline";
+        } else if (follow.checked) {
+            limit.checked = true;
+            document.getElementById("followicon").style.display = "inline";
+        }
+        else {
+            document.getElementById("followicon").style.display = "none";
+        }
+        if (master.checked) {
+            if (note.length > 0) {
+                note += " / ";
+            }
+            if (masterselect = document.getElementById("masterselect").value == "false") {
+                note +="Non-"
+            }
+            note += "Masters";
+            document.getElementById("mastericon").style.display = "inline";
+        } else {
+            document.getElementById("mastericon").style.display = "none";
+        }
+        if (problem.checked) {
+            if (note.length > 0) {
+                note += " / ";
+            }
+            note += "Problems";
+            document.getElementById("problemicon").style.display = "inline";
+        } else {
+            document.getElementById("problemicon").style.display = "none";
+        }
+        if (merges.checked) {
+            if (note.length > 0) {
+                note += " / ";
+            }
+            note += "Merges";
+            document.getElementById("mergeicon").style.display = "inline";
+        } else {
+           document.getElementById("mergeicon").style.display = "none";
+        }
+        document.getElementById("hitnote").innerHTML = note;
+    }
+    function submitProfile() {
+        var profile_id = document.getElementById("userfield").value.toString().trim();
+        if (profile_id.length > 0) {
+            var startid = profile_id.toLowerCase();
+            profile_id = decodeURIComponent(profile_id).trim();
+            if (profile_id.indexOf("&resolve=") != -1) {
+                profile_id = profile_id.substring(profile_id.lastIndexOf('#') + 1);
+            }
+            if (profile_id.indexOf("profile-") != -1) {
+                profile_id = profile_id.substring(profile_id.lastIndexOf('/') + 1);
+            }
+            if (profile_id.indexOf("#/tab") != -1) {
+                profile_id = profile_id.substring(0, profile_id.lastIndexOf('#/tab'));
+            }
+            if (profile_id.indexOf("/") != -1) {
+                //Grab the GUID from a URL
+                profile_id = profile_id.substring(profile_id.lastIndexOf('/') + 1);
+            }
+            if (profile_id.indexOf("?through") != -1) {
+                //In case the copy the profile url by navigating through another 6000000002107278790?through=6000000010985379345
+                //But skip 6000000029660962822?highlight_id=6000000029660962822#6000000028974729472
+                profile_id = "profile-g" + profile_id.substring(0, profile_id.lastIndexOf('?'));
+            }
+            if (profile_id.indexOf("?from_flash") != -1) {
+                profile_id = "profile-g" + profile_id.substring(0, profile_id.lastIndexOf('?'));
+            }
+            if (profile_id.indexOf("?highlight_id") != -1) {
+                profile_id = "profile-g" + profile_id.substring(profile_id.lastIndexOf('=') + 1, profile_id.length);
+            }
+            if (profile_id.indexOf("#") != -1) {
+                if (profile_id.contains("html5")) {
+                    profile_id = "profile-" + profile_id.substring(profile_id.lastIndexOf('#') + 1, profile_id.length);
+                } else {
+                    //In case the copy the profile url by navigating in tree view 6000000001495436722#6000000010985379345
+                    profile_id = "profile-g" + profile_id.substring(profile_id.lastIndexOf('#') + 1, profile_id.length);
+                }
+            }
+            var isnum = /^\d+$/.test(profile_id);
+            if (isnum) {
+                if (profile_id.length > 16) {
+                    profile_id = "profile-g" + profile_id;
+                } else if (startid.contains("www.geni.com/people") || startid.contains("www.geni.com/family-tree")) {
+                    profile_id = "profile-g" + profile_id;
+                } else {
+                    profile_id = "profile-" + profile_id;
+                }
+            }
+            if (profile_id.indexOf("profile-") != -1 && profile_id !== "profile-g") {
+                window.location.href = "/history?profile=" + profile_id;
+            } else {
+                alert("This does not appear to be a valid Geni profile id.\nPlease use the numeric id or the full URL of the profile.");
+            }
+        }
+        return
+    }
+    function entsub(e, form) {
+        var key = e.keyCode || e.which;
+        if (key == 13) {
+            submitProfile();
+        }
+    }
+   window.onload = function () {
+        document.getElementById("followcheck").checked = false;
+        handleChange();
+        Downloadify.create('downloadify', {
+            filename:'HistoryLink.htm',
+            data:function () {
+                shadowbox = "<div style=' background:#fff; border:1px solid #d9d9d9; -webkit-border-radius:6px; " +
+                        "-webkit-box-shadow:#ddd 0 1px 1px; -moz-box-shadow:#ddd 0 1px 1px; box-shadow:#ddd 0 1px 1px; " +
+                        "border-radius: 6px; -moz-border-radius: 6px; padding:15px; position: relative; z-index: 3; " +
+                        "margin: auto; width: 100%; max-width: 950px; margin-top: -12px; margin-bottom: 25px;'>";
+                style = "<style media='screen' type='text/css'>.separator { border-top: 1px solid rgba(0, 0, 0, 0.2); " +
+                        "border-bottom: 1px solid rgba(255, 255, 255, 0.2); margin:0.5em 0;} body, input, textarea, td, button {" +
+                        "font: 13px/18px 'Open Sans', 'HelveticaNeue', 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333;} " +
+                        "ul, ol {list-style-type: none;} .graphbar {border: 0px; background: #50de76;} .graphbarblue {border: 0px; background: #00c6ff;}</style>";
+                source = "<html><meta http-equiv='Content-Type' content='text/html; charset=UTF-8'>" + style +
+                        "<body style='background: #EFF3F7;'><center><a href='https://{{ request.host }}'>" +
+                        "<img alt='HistoryLink' border='0' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAYwAAABLCAYAAABjo7DyAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyJpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNSBNYWNpbnRvc2giIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6OTNBMjZFM0YxMERFMTFFMjhGRkVBRDhBMjExOTRFNjciIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6OTNBMjZFNDAxMERFMTFFMjhGRkVBRDhBMjExOTRFNjciPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDo5M0EyNkUzRDEwREUxMUUyOEZGRUFEOEEyMTE5NEU2NyIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDo5M0EyNkUzRTEwREUxMUUyOEZGRUFEOEEyMTE5NEU2NyIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PpXYSkUAADMQSURBVHja7H15jCTXed+vrr7n6Dn25pKcXUqkKdE2h6SOyJYlzcayLMsSjaXjOIYDH7O5YEB/7QYxjAQBjBkLuWA4wa6TwHbixOAkim3BliWOTNlyDFHiRBZFUqYoDo/lcmd3556+68r7vveqp7dY3dPnzKxQH1nbPd3VVa+7Xn2/9/tOzfd9xBJLLLHEEsteosWAEUssscQSSwwYscQSSyyxxIARSyyxxBJLDBixxBJLLLHEgBFLLLHEEksMGLHEEkssscSAEUssscQSSywxYMQSSyyxxBIDRiyxxBJLLAMAjCd/+9Mr1XIpOzScQzKZQsI0YCYTMAxdvOuJ/wzx3ALt7nsOLMuAU3Phea54rQbdMGEkk2JfnXagIyOVSqFWqoj3NFjiWK7rwSkXxf7i88k0ND0lDm2LRw2maUHXfVQqJbGfi5RliePX4Ou6GIfF+7iFHbG/B9txUbNduL7BY8nl0nA9H65ti7GnUS6V4Ng1pMXnskNZcWyNP1cqlrGxto1yDTAtfeXHfuE/3hdPgVhiiSWW9sQMnuiWNpQppDL+d7dRNQqokRI3SIkLRV2t4uRj78PYO98Jp7gOghhN/EtgQ/95QsEbuiEUeQWGmRTKXWeFbZgmzAlTKHVPHEcXwGEIpe4IQKgKwJhALjuEr317DS8sbyJhaeIYugAmH6Z4rAnlXy6XkRDgZYjPiWHAd204jsfncwVQOQKAfAFOlgAbAhnXdXh/l4BGjM1KJJDZTgngSIgxmQKMarC0Ih6YfBm6VxyKL38sscQSSxeAkctlvfLLK3jt978AM5tmxS3+ga95YmVfxInT78HRjz2MwvVviBcFiyANLmCD/xUKnpiHx2xBZ2VNL2iazqyEHj3BBALjl2akMTpyL759tYzLT+/g5tYYkhbtI4BF01Cr2dja3hTgIFlHIqELQLFQrWkMPJrYx3Ec1ASQOQIo6Dkd2/cE4/Cr4rnG5/R9G/l8DpMT4zxSAWu4/64U3nPPBnRbfLFYYoklllg6Bwzfd+FpPoxMEkY6wSYcz/OZYbDyzwgQESt8z5eret031OcE1xBKWyc2oll8HLZI0X/ENMSqnx6FqodGn9VMAQDj2CzY+MwffBM3NwoYG07Tkfh8tmAmNbeM4YyJatVhwCBLl3gHVkqOsyYYhC4AKGF4MIXe9w2fwYaEjkGARaY0eswmPGSTHjMhzRDn1sqSIWl6fPVjiSWWWLoBDNf14To1AQiMDzB1QyhYjc1INfIpjI7A2dmGL5S4kcsJEJD+A9/1BBCIwwiw0A3JJAxNk0wCQuGTehb/66YAGE8wDmsMuWwev/WH38aLr+0wMBBDkIyAfBgV8bfNz5PsEwGDCAEB7WeaJpuo6JHMUMQ2AnOUbdsMYBJ8PGQyGYyOjvI+ujh+VQBNsVCBaZkwjWR89WOJJZZYugGMlGAQZbH6L5UrYkVu8Qo9bSWZPWQnjwrAGMXOc9+CZRehJbfhmYJZCCZijgxDG8rCF0qYVvC6AB3N8QT4VAX4iJW+Lk1StMKHkUI2M4qXrm7i88/cQCZl8bkdx2UmQSBB7KFarTIokKInxU9/0yMBSCqVZkc7swyxTzKRUEAhxmJKvwcBC+1vWfLcBCgkNXLS+2TiysBCZxYpTYFgLLHEEsuAJS+2WbHN77HflNjOq+fzgx4U6eddpzeZjQQLIMVuiMfhVIb9FNtbm7jvI+dw7D3vQWX1ZXirK/DWtuAXbKGBxd5rb8GxBUOwDLgCNDCZhzExBi1hMbPwmD2wrUiwDGni+rNnrmNtx8Zw1mIHNrGHgCmUSiVmD/SZclmyDQIPiriijcAgK5jD8ePHxWOWTWTb29u8CawQoOIpxuRhZ2dHgE0Nk5OT4rNJ6XhXwOR7djwtY4kllsMoM2KbE9u02K6IbTH03rQCimn12iP7zjAEWnC0ESnuiljRJ8Xq3BQL83RuGGd/4lPwajvsUNYmx2EcO8Ird00wA3+nBK1YBGyhqKs23Neuo/b8d6BbCWjDQqHnh5E8cUKcyRRswMC11RKe+dsNGOQuV/6GgEnQcwIUT/lPyBRFSj6dTjO7qFSqOHXqJL7vgQeQzWbZdkbwUCgUsLa2Jh6L/Hjjxor4bIkwSnw2U/dn8Jg1j8+hw4inZSyxxHIYZUo9nm9gEK1kad8BI2GlYJFTOJFgc8/a5iZ0sdp/+B/8PE488iiqO68LNkD+CQEqrsv+C1DuxFge3kgavlDGugAdVMowxVu+YAfaZgH2q2+i9sqb7MNInjqG52/kcH3LFh/VOHeCFLkECI+BY3x8nBV9rVatswvayCw1Pj6GBx98EGnBNKri/a2tbWYRw8PDzCKkKcplQMhmcxgaGuZH8XEOwSXLFPln2EGvJ+7EiTStVhhTirJuiO3cfk6YWGKJ5VDJvt77ZqN9ipLhSqUizEwaRbFSP/bgu/HQL/8ToYR34FS3OEQ2iI3VyWykQmg1Wq37MppKT6ahZwy4uTSMI+PQ3nmasgOhbRfEqt7E9dcqgglUkUvqbDaiqCcyQZG/gfwPlMCXSJjiuUzgI4ZBYEEM46677uK/19bXsbq6ymBBQiBDYbcvPP88dgo7YpwmcjkCjCEGCDJv6ZquWAz4hTvQJXFZgUSjXIjBIpZDIoHdfUZtgakknp+DBYF9/X13Y0vFylxoY7hCo5a3tjBy8iQ++uufwchdE6hsvcEObXqfNo0jqMjPQGYdilTyZT6GeCTF7NOxKAOcVvtkM6LEvvwo3MkxbLgJuI7LiX8k5PAOQmJ5GJ70Y5CZicAoiIQ6ceIExsbG+DmZqGgbGRlhEBkRDIOSBMcnJtjsREyDwEdGV3n1UFsKB+aAX05ed3qli/spsxFgQbbNhfjeiuWQgMUrkHb3mYbXZ+Kfpishn8Wl0GvzEa+RLB8Iw+AEO6FUKXT26LvejY9+5t/h1Ht/EOU1MR7NE0pWvk/mHF8obV65y6ohimV47AchCuKTE1soZM1MMoPgnAehrIulGlZWC7BMg8uFEDjQSp9MYDWVnU3b1tYmO7yz2QybmoKNWAadl8DitAAK23GYcbgCFMhsde+997IPg0CGwnNpo33pa0pQksd3a+Jzntvtb7ahbo4rattooeTzoc9d6fJmnIsYw6UBzYkptS0eohvovFI+sw03ySMtfvtY9lc21Er3MALEYZzP7cg83h75dL4JuBwAYOjg8h4Pfeo8fuRf/mvBMMZRvPUdTsAjU5K068jQWY3BwuQVO7EMnZ5TYhy9T/vZNjzd5NU8CzubpdmK6kBxcp+vMsU1mb0d+DLoOYXOku/h6NEjmGDWoNXNZqT0CVxMzWBnNoEFlR6hvBEyQZEzvFgscqgtPdKxZJ6GMkdxeC99n0QvN8eGUuJzHXyuWwV/MQQ8wbEGoSxnlOnrkUN040SZ4p6IweKOWSkfpBzG+dyLTB8ahuHWynjHj38cx88+BsMqo7z+CifdaUrxc6Ke63AxQAYI32HfhU65GswwNOn0ps8khDLn8iCU96DL9ygySSh+y5DRSa4TlArR6iYpjZmLLxR/jv0SpPyJVZCJKhACJgIDjaKwPJ1DeglAAn8GgQO/L45Fvg8yS1GkFJvNNPD3sFI5WH5PlUEWmly8VtLNhc1HKMvlLplKu4p5UGDULVhGmeJiu/idocwO8jodxvncD7YU/n339bvVfRgmFeoby8JzVlDZfouzvEm5EklgVkHgQBVpVW0o/rBiFL6nWAMcyTSYddBmyf3ZQZ4Uyj/HAOBROZGGDO3AFBVESlHUU8AqKpUyP5JpKQAmYkIENgQMJiXvpQSolMt44cUX2fdBDnRiKvS+zCIPwnV9TtzTzaT4vj1les93cTN0s9qajWAX/U7QmVUmtln1neYP0c0x1+S3j+VwST5inh4UWBzW+dwvxnSgv/EuYAiAcCo7QoEXVVSRdGzrRoKVPwgArFRdkZtmiu1YQX4D16/1ZJ0pYh9s+lGMQUZTmUglshjLKUbSABJBLgYBCPkiKLSXWAYxDKowSwl7MmtbkzWqVN4GRVdt7WxjfX29btqi6Ch6JGAKIqyomKF0eHv83UwrAzM12utvd67JSn+xCbvY6HLyh81h/WIXF9WNdVkp52Vl6jksEmWvvbLfFDyWrhTZQZijDvt87scCKn+Q5qjbTFIUyRRUmSWnNRUaZJ8FRUUFTm1dR+AG8JVJR1NMw6GSIFzOQ0U2BdFUQkMbPpUtJ2bg4/TRNKislOvjNv+FTNqTip4Ag8Bie3unXhOKwUKBledKJzc5tckcRe/fuHGDI6OCYwbA4yiWQeDiq8KJUIDVo5DyvqC28IV9pQ8rgZkICtrraimIZomaeOcOmTKejdnFHWsqwT6ZSu6k+dyrHAqTX51hWImUUOSmzKdgZa+c22z4l0GwlLjHEEHhtdAVXPjcLIl92lz0z4V8pv4Vx/EYiOizLt5xagijOSpVLsNafRW5REqdwIKioQgsdnYKnGsRFBWkLUgCkbjmczkQYh7EKugzxESIUUhzma5yS5xQ2K7HvhXfrR32Cxu1aus1jHYm4uaileAjh+zmmo5QQgs9jvFiExCKZTBzfj8Yxp0yn7/3AIMKgJOSJeAwrDQ0M6HKkvsKNAzOrXAZNHS14tfZVKVp5NtIK1Yhy5rrXHSQQnE19mlw8JT47H13DeP+08MCACSkEFsI2AMxhYQqJkgRThwNZZp1hS8jneQ4ZVVbh4GCGA0BB/k5gv0DhkHnIKe59H+gDiaGkdjPC9vN5J2NmBy93gRR0VbncDBOwSBc2I/Ynm1iovJ72OYQy36apJb2aQ4dlvm83yxu6SC+Z0NTCJVY4ctoImIaQRSTdGLLMFhdmZm0IEHP3/089cMwBHiQiYo39m3I+1U6oWvQvBo+8K68UPA6V49VLZjqjZEIKALTEgEAAUFQ0jxgCFRCfWtri4EiqHAb5HEEDu8AZOg5HY9Ag7r0eVy5lkDK3c+bp9PV1nTEzdCPJL3l0CrsIE08T6lV/37J8h6/4ZSarOtqXHHSWftK+6Ac3odpPu83KB8Ig9r1YfjU8rTC3bt9Tyh6jdqummpV7slcClWckH0BUBYpBL4MXTq3PROmDlVW3OOtVLGxvVlCImVhdHQMH33PaXz+q2/hpWs1TIzlOEmPwISElDuBA5mZKAucTEzEJgg0iDGQ0rdrNkrFUr2cSOA0l4wCdUd6o2mKSo3oBlW7TSp4G1htkH6sBAaVoLMIDOyLB1FNU+rGbaWc59B5WHIvQuO5ssd1OB9iPsG1u4Q7L+nroNnFfv1eg5zP3yug3Biav9grmNcZBjEHbqPKiXCOLE0uHklBU20m6pdhUYVYFRnlBf0kfF914rPZZEXMgtwNO4Uy1jeLWLm1hapQ8EeO5HF0UrZizaUM/PIn7seRiVGk0llMTk7IcuUcFVVh5U/+CFL8lF8hw2NlDwxXPXI+hmPXS4cE9aioFhU9D5iQrsuvSJ+vlyERLMjXzUGZo/oRyRC+CTdwuHMPSNm+gt2Sy0+2MAHl1fcZUzd7eItKcHyiyb7tbpfauA75JtfzqUNgzqLf9XKDeW0dg/PH5NU5LqO9SqkH5fA+bEKs9NmGa/RUHxdF3Zr85tRcCZKMn2wyzzsHDFK+nHineldovsv3GlV8rfo6Xvh/L+La174Fr+II4KByG46sP+XLAoHk7SiJ91Y3CtjYLqNQrHARwaNHhgSLoAQ8UwGTh7JgDY/dP4FPvHcct9a2BSA43K8iaHREip/8E8QuyuUqO7er1Qq/R/vQ60EkVMAkuK+356ty6JnbfB9BMyYoX4nr1uA51f1abS11ccOGJ9qVQ3yjzKqJGHUDTTdRJvMtlMpBOVCX9lAGlw/gt51SiufJEEDkEZ0B30+GHFzXvb73QV2vw8SwXolgzTMKQKb7eE3ana/TakwXm1gB+mCS8lzlvzDqRQgJLP74qa/gT/7T7+LRlU3kPLHyPzaBuz71UTzwMx9nP0Ct6qBSE5sAC2rRalkGcpkE0qmM8nN4bP5pLO+hGzZsV8dP/8hJvLVawtPP7cBkdmDUndhUE2p7e4tZwc2bdr0vhoyWQt1EFQADgQj1D0+nU4ppGFwenYGEC18BVcFedkpU1irDrWX3wRzVzc0TBTqHNeJjagCKNPz9FwawYr2I3RLxnQAjyYUuFgDhKq6XsLe9/XwTII5S1rMN32lZjXGxT3N4r2zpw5bh3eu8CErxtHONZtuY/3QNz/TBchH+fTe6GNN8r/dSQy0pg/MooEJgs5khfOHpZ3DxF/8ZHnctTEwexfpOBdeWX8cbX/sm3JKNU0/8GHY2tzE6lMHIkMlKn5owQTmdJUhoyu8BVXsKXCLE920krDR+5fH7BDh9F3/+NxsYH6UoKYszsskUVa6UpWMbPvsqAmd4wEIChkHnogxvAhNLAAiBDu1Hr7nc0U+wkpqLghjzg3cfFeelkGF9UCapXpX9IG7AqZB5Yb6PN1gzWe5i3NMYrAN1Dr052mfV95rv8DNzEb/b/B6/azsrwaUIphGwkm5Li093YGLKI9pntx8LlX7O5yhwnsPexUUvtznWmR5ZV7sO7yjWGZQS6ss9X9eaLvkvIJ3ZpmAK24Uifu93/gA3bq3h3f/wo7Aen8afDVfxWauGGwITvn35v8MolXD61ChGRzJIpZNCiSdkxVo/6GYns6sDs5Gs56SpRD1HMIIy0gkfn/6pM/jJ940LhV7GdrHKjvLAcU1FBgkiiEEQAAT9vek9iqgicxX5NAgsCFBclQHObV9VGZGaYDNUjuTC4w/hX82+l0uc2H7ffRj5DlcC7U6OKP9FJxE8TzZQ5rk+KM3wjdZMnujT8fph3phpQtEDc1/YR9KqKVVgC273GnR6o7YLFgt7mCrnelDG7f7+B+HwHsR8XmpxTzebp5d7uKc71St7LaLyapEwG9IblxS76Vv02O4y21D1nyiEVjwv7BSw/N2XULJ0fPvNa7i6cgP3TB3BqykXb5hCGZerQKUGg0BCDxooaaoNKlTuhUzwC1gBvdYYnUT5365fEwDl45/+5Fl8+vF7MZYBVtZ2OKIplaCaTyazhsDsRODAn1XO7KDJEuVwBGyDckUoKNgV56v5Cbzj7gl85lc+gF/7hcdg6bYMr0XfGcag/BeLDSs/ujH8Du2i822azrpRLPkmq9FuuwAOwtk/o26mKEV4RplvFiLee0R9j0tNFAYdc73BjNGJ8l9uc/8raoxaiDEsNABy1PgRMoF1Mv+iTILtggsweIf3IOZzJ6V7osywCw3X6UqfAWMvE3UAFjMR86YfQBE482duM0mRcicfhMHlPzQMDWfxznfch6Wl57C8soojp8Zx3+Q4hoxlVCo2tIxQ5CNZTryj3txczZYq2NbzN6jEiMZRU6gDhqbSPXTJACjJjxiIVuXPzDw8gXuOWHj6m5v40t+s4Y1yGna1hGRSOq055Jac3QRQ4hPJREKOWYEdFSIsVyqwV7ewtVXE2FASP3vuDD7xvuO462hKjHtbjLfMLEgmIPb0I05j7yiSqMZH3ay6/YhVcbsyqBt4rsnq8gK6r8w73efVagAWUayiHV/EotrONwHpxhDcTlb0S02u81zDNXsi9P2X1GszEdf/EqKznmc7/A3Dx9jYAzAOwuE9qPm81KbpJxxpFG5sdCninu8F0Fr5RafUeKYbxnuhj9dgCrs+HZqfi7uAwUBB1Vxr8F0N4/lhPPEzP4Wv/uHnYb+6gtrpCXzrldcwanrI+VX8wD/+OeQmx+DaVeksV0l9PpmdfJnx7ZOfQDEOXv37MmlOlqHyuScGnZNMYOVKEZs7FZw9NYH7To3i3CNH8FfPr+HLS2/h5TcFABQqQJGc1jZSyQSDRFawCsO0YCVcFMo2tgs1MQYXZyfSePzvnMaHvv8I7j6aFiOroVxa50cJXjq6dHkHYZZ5HJx0Wq4538EKt12ZbWE+6vbYz/aBoYUn+5NNTDmdOq6X0d+8keWIefVkGwytWWn7ZTUvLkeA0FQH12QmAlg3OgSMQfswBjWfZ9oApnAk1JUIBhqw4uk2TFvdLMwCNpQPgUUwr/sJqJcbxj5/G8OgcFeqHSWrQMne3h/50KP4nf/87/HHv/W7+OZLNzF19hTnS7z/wx/DfT/zKXgCLJhVBBnddXNUUP7cgEQHXdajorBZzZO7ktGIy45b3Ilve6eIiXHBWPyCeN/E3ZMJTM2cwuMfOInltwp48bUtLF8vYHWzii2xP6n9dNpBImFgNKdh9N4hHBkZ4bIjU8dzyKXIXCXYRvUGPKckgCUpx8ZmK1uNq+OJ2nMcc49KZh6dh9hO9fkGawzNWwzdaBfbUDLNJmY/IsyaTfbG792Nb2UpAiAvNKxKoyKultRNvBgBhksR86pXc94V7HYmDINGu6aJ8x0w2YN0eA9qPrcCjJmQ6XGxxcIjaoEx1cU48+ozU6HfODBDTTcsIvud5d5Y7aCex9TQotXk+kqUi+EKBlGrFmE6Hh775Efw/T/yftx8YwWO0MLHjx9BImUoP4Eue3j7Qbqlxp4Bn0xNvgQRjyKjlDmK91VAEYDKrVtbcD2fwUIXYCILHFKZjyJsx4QpxvOuuxP4gTMnuBlTzfFRtTUuaKipHJmE6bOpKmlStjpFRK2jVNgRrzlsMmMnuerTwUyHMtrdjvMwZtWFCxTBUoNCyyt7dvjm6bTTVzhuO0hwO0w3WCNoLoQUVF5NtEsdKvbZNlfinZhWomy//S53vdSgJC+0mDetVuFzDdfoiR6V7nzE955tU5mcDwHsXqXkDyrDe5DzudUxL3ew8OjXKn+uCSg3MosL6H+e1nQDiN7GancZBpXV0GSTIVkCXBPAIZRvqQQ9a+HkD9zHJdBrdgXVckHWirKyqmS4YAow6jWo2I8RJACqqKjA7AXVl4Kc1Ss3N9lhfWRiSDAAQzABVZuKP0OA5LCSt2tbqFRVYybxaoqd87ItLAEMdQK8erOCsayPpEWnsKUZzON/6rWtBCyKvxW70LoySp1pMjn7kTsRZcNfHsAN1osj+WJoVXMFu/H/YZbRztifQnOHYC/F1ZpFQx1EfkCrUjHnGwClHyVIFiNY35S6Znt999kI8OlUcW8cwO/Zr/nc6v4Nz/H96OJ3vsliYzY0lpk+A0Yj433bd90Nq3VkdJHnO7u9LrSgd7cOu1yBUy1DZ3CQithzazK3AjLHwvOqQsVTFJLNYCEd36r/RN3xrfNbV6/dQjJh4NjRPPshfGqQgd2y6bIYoSELIpKjm2pbgVhBSYx1UzAJavYkNkcs7L0iJnIuCsUa55DIqrkJdT7VcAku537sNnbqGDDmWyjBTjMxB3WMduzMvaza50LmsWZmi4ttfNdnGxTbYh9XjfkmINTvVdhyl7//UsM4LzcwtX6ZFObbMDVFXY+ZDtgFcHAZ3oOaz8tNwC8fms971Unrl9Kea1NPnEd7JVw6YVxTDfPytu+6Cxg2lcuwuVQ5KVtNVaellT7Vigq66rG2N2S+BVejZUDw2PRE0VLiIHXzFLgruMf9MgLl7QpgWF0rYnyMSoYMy5M3dMPjlrAqJogNTr5M3OPy6mrTdEudV56DAMrSatygaadEfhEahy17cPD+Jo+L6l35bBrzYOruICdxvwBjEAxjsctjPNnEtBMFpLMtmENQdyrMVPoFljN7mI76ZQZZ6lHBzWHXRn2hj3NxMeIa7xWpdzGkKOf3ac4fpvmcbwIYcw3vtZu02et9e7kFg7vSwf7dmMBmGs71NtPybf0woEtNzUUIZTNUafJh5StX57KxkoagXC3/LWvVSm2vuucFzm9ZBFAm7VE47sqNDQwPpcWWk/4M6gfORQ9drgXFliwCCY9KnwulLlgLbRzXRFFWrqxhxZV1nYpsB0t+CjGeTMpHseLwLjReySL8Bsak8THIX0PNmg4ZYAzCmd6PzOmws/9SxDEutcEygps07OCd77N5o9/O82YsYaPL3z8wGTWWGum3eWOhDXNn4+812yaTbjzeQTi8BzWfl5sARvi32Q9TVGME4nLE3Ikq7xE2I3Vrnmu8ZyPD43ez11zOi2bl7XmyT4Us5UHZ0gllWoIsHRLYq/zd5koye9vjUFnupcH7eSqRT0OhWMbNW5vI5Uxk0kaDI1oqewYPBTbkX9DU+YIEwKC0iC/tZLyR85xPo8koLNPUMJJLCpYhgIoaQBlJ7kvOrIX7dFgMRq5NZq1yP+ljP0qa5wdgE+5HqZJGB9tSkxXWQoSSalSKQb/l8w0T/wxuDxoY1Aq019+xl/yQZqxxrsH0MwgzTlSk2vk22cWVLufVQZij+jWfm12ni3vM8UGwp7kW82epBcuZRvd13c6Hztv0u+4ChuYpLDAYODROjMshlTmCVFZsmZPQE0cBaxJm6qj4+wSSqXGYRlZGV0Grr+gpLJdLnhNrEAq6WKpga7uM8XyS2YXryEKHhBScwKfJvA1JUFQpEfKdMBC5irHoKjnQr7MfCS4G7+fyuTSkkxpqYhg7JVdW3OUmSx6PiXmQZrGfxnWK/brIh7lYYK8OwsshitoqMiRq9RVkic6FVi7hrmi9xtbn9wCd5T5f34UuFVwQnjvdjPL3GTT2+h7drqA7qTd1J8znfIvVfisW3etCJgrM8i3m7HIDC1xoMt6LXczvJ0NztKmJtB4lVbNtDkGlbOlUMi/U6xCub2v4zpslfOfaGq6vllCoSIdxNp3C5EgKx8dNnD2ewb3HRjCSdqFrZVTJFyIUssGRSRpWbmyKY7s4dnSUK9lyOwryQbA4yl/hyeqxmvJ3EEMhcOAKup50qEOCEScH+hIEuG+HJhmGQcdkB7eHbFJ8n6qACJPG5EvggayaS10B2YRlVwc1ifeLnnej7Dq9uRpvmHN7KN5g5dNshdQqsWiqRxPdXMP5N/qszM5HrKR78V9c3CfzxkJIeUzj7dFSc6G5caXL77VfDGNQ83mqDbAY9CKwMSkwCGWda/F9L6j9pyKOA7TnawlXQghAdGNPwCCwSCYzsNIn8ezLBTz9jbfwzVe2sbJeRLFY4uJ+hq7xRgo6mc5gZHgUmZSJE+MWHr1vBD/80ChOT2bYv0BlxW9tbHMhwcnxDLdk5WhdYgIIWrt6CDr2QVW0VQ05lOmLeI6lzE+KEFEdKAUiMkxWliWhTZqZDGSSJiolD+WaLsanjslRXUVxmgyzGcOwDhNN3q8V2VKXN9eFNj/bbJ+9YsXbBZFmq8DZhuNvNLlG3TpHw4Ax38PcCEpvdKKcu5XA0R/u0bDU8Px86Br1skhavoPnc77FQmG5i2vV6XwO+w8uRcy7jdBvHCj3qMoTAfg8scc5w4D0xF7XsQ4YqUQKgkjg8tOv4yvP3UDFBhIGRU9VYGkOJ+tRWXJXmZmc8jb8jCUAZASvrlQEEynjy89v4scfG8fHH5vgxDvf28ZJwT7YR+FKZ3bAGKSPQ2dnOPtHyATlyYxzCQYSQGRuh4rAUol/7GuBy+DlS+cGO+apnzgVQiTwy6Y93NwGh+5qKqNc+kI0DrvlLPTBmaT6tdrK93hz5btYaT8ZmqyX2rhhgkSfmS7p+EabQBwFFpdDCmuxj7/jxQgzT7vXNspBm++TeaNdWQz9jtNN2MU8Omv5OR1x/QZtkhrkfG41P7vpIbHRwRycibgWCxFzb7HJouAJRNdLo++8ro43H5rTUbXR2qpBVfdhpFJpfPVvN/C///INXvyPZg12Dtu1KqxEAlNTU3j3Qw/hzJmzOHr0KIaGh7hnBfkpcmkTozkT6zsOfvepFfz677+EQtkSYHECtmAarku5GTXJLrghhiF9EFChraTIXck2yKexm48hwSRIJvSoHSt8lVmuyVpUfpADItuvetzGldiQjSEBaIWSwWG2/BkKr2VzmPSH9EmhR5Wf6Obm6VZpdrIK3Nhj/2dDN9dedfSDyKfGnIqliFXKXtU6l5tM+OkWv3u4G9xCi/N3UwByOvS55Q4V/XQLJb5fHekWmlyHiyHzx3yP8+og2EU/53O+xbXqhgm2m9x7PqTsgx7ynSTxLirzWrP7ZA67bWN9vL0eVjsWgLcDRq1ShOY5yCSoCRJY0dMW9MvO5/MYGxvD6Ogocrkct0ElHwUl+7H/Wij1dEJnE9UXvn4dv/pfvonVLQ1JM82hsNJX4ctHZguqNwaBgWtzeKz0S/gMHlR3ikxHpmA+ViIto7F0cBkRzu0QLMFxahwCTDREN5LccU/2+KYS7WnkMqbYX+dwXkr8S5lJJKnIoif9NQNiF936L9qdZP2+6YKJGy5LsldF13Dk04ba/5EOV3CtboZwjf+geuZ6xKpxOTT28I3TCWiEwxT3tO128FvPY/8kHK0XVB0Nmz86+V7TAxprEOWTP4D53Ow4l/p8L882nO9yaI4tNyj+TsExAI1uFqodlRa5LXHP1xwYhvQ18Gpd9cSmx6BREYEHCfWfSCZT8AJ3A/EF1+PifsNiZf/1l9bwG//zRVTcrFD4WZnYp8n9OHcCshCgODEDCmeQEwNxZemOVELjtuErK2tYvbkmxpZENjfOLMSxBWMRzEfWndI4S5wbP1kZGJYAF9OE5CkuMpaNalFH1THxtTffwJdffZnqoIh9k4NSwEs93NxRiutiFzdMs+OFq8zOYrdndLhkc6ub6ylE92240uWKc6EFjb/csDp6JcLuGlV4LSqXYA7t+0WeDO3bTY2n6QNmF81MGY1KuZtQ0XyT79pNtnEwv59V21QLpTeo+dzsO/VSSqZZ9Nblhnk822JB0k0UWtDDZamDMZ7rlEHVfRhs+mH9K0NdOaHbkH0n5COwurqKW7du8SqeXqP+FIlEUoBHWrwWJO3JjO2hTAJPf+MG7r97BL/4sXtge2uciCdLiejs1KAaUBzZBHkedmMbnmAEFfzR5/4af/vy6+IcNc7qHh4ZwXve+yje/+hZ8XeFgUJWoNXrQMQPmjRXcXkRt4Z0MokvXnsVX3z2BXzr1jWMmgZ++yM/jJFE31ZF/aLnG3h7HaBA0eVDq53ASXaujUk73WLl3GxVNd/i+0Yp04U9Jnc7v8k8Ou8S12qsYYdgUOGzVbRXuL9AVF+KXhYTg47jb6Zoz0cox35nmD+J3aKcreZPo1ks3wH7GsR8bnWtemWCi22ysagKxd363JYVaOzVtXEBXUZ+NTRQInYRFB/0VfnwNBxHggOZhK5evcogMT4+zkqdIqfkZ5VzmpS/IRPtBFGBKY732b94Az/00FGcPZlDpbwhdyQ08mocKqupnhjkjzBNC8WCjd/4t/8VT//lV5HJZpHLZvn8xUIRX/nrZ/DjH/0wfu6nZ2AmVJIfJRlSYiH7OGx2bnPBQfH6jaqN//A3f4Wv3nodqxvi3I6PY/kxDql1tb6UBum3w3uhyTGjurq1E4M+j/YzQJf3WEnnQ2DRqhR3N4lu83h7YbVWY93LSbekxtcIGlNqdTffoNyC69isfHW3C4DDBBjNTBEbXSpCtDAFnUd37WHbYV/9nM+t5Ap698tcwd45Eb2Us9/rd1qIuBZXsFtyvyupm6TMhCVrQ6lw1qCwk2WZHCJLpqhTp07hxIkTmJiYwPDwCJfX0OoVblWhP8lXpNkqZeD6egWLS9fh+bIrHqdZUCkQXRUWpCgpTqrzOArrv/2Pz2Hhs3+C6Yd/EDMf/hAee/RRHJmcQDqTgiUA5XN/8iX8r//zJZi6xe1kydTlOjVmSIwfFNUlXlutOfjVpb/A/735OkxxniPDo8gJADQoJ8Ox4ddK/TBH9cvh3Q0NbmcFtNCmHXZemZRanTuszFtF1kQ14mlHzrVxowZjXWxTWZ6JUNSBGSQwdT3VcHMHYHSuR6Wx0ee50U/AmO9BaSwNwKzW2HJ2v+Zzq2vVDwW+VzBBpyakqS7P39irvudufLuAkUpzL++Gltv1CKREIoG1tTXBKByuwyR7a1cZSILyIbtlzCXgeJ40TSUtHc+8uIqtgidAh0xPAhwECGmGzuejEFdiFslkAm+t3MIfLPwRJsfHuJseRVU98MD9+NiPfQz33nMPMw1BWvC5P/0yXn3jBh9PUxFXXGmXCx/agkjo+O2Xn8NblSImh0aQSqaQSqWQHRlGSgAPgQqFCw/AHNWPidbOqmixA8o838RWuahuPq3Nm7Cd9pWBMp4JnX+5g0n+SMR4ljocKyLsw2fQvIR4cPxzuN0X04tcCB1/0HkX7SqaJfQe1vsEegeNYBxn0FlAQb/mc7Nr1YtJKMocFmapATi2WpAs4O1BHBs4BGI2wIMqzeHXAYBMTtR5L58fw9bWFnZ2igI8LJTLJbFVOJSVnOHkALcsSwHGbg0q+jOZ0HH1Zom37F0mamTiolwJrlcFNnk5tot0OonrN9bx1vUbOHH8GPJj4yiXSlhbXcW7H3wXHv7Bhzkbfe3mLXx96Ru49uY13Dd1TOZ1KK8FlQmxjCT+9Nqr+IurLyNjJlGulhmUCDTIuZ4Q75sWsZNKv29EoD/hhY12yPCqPqCTnSqfRbTuENbNKuyiGutSw+8RjDl8E3d6nnn0P5poeUDHbbUa1g74/m4W7dWrBKaU87i973Mrxdk4J3pdWPVjPu/XtbrSxf26rID00MmuD4MUr0sMIs2JbgQUNc5pcLGxscEsg/wXRVWCiUxUtu0xy6DXA8d4ADhBhBW9Xql5uHqjwFng6+vbbJYqMeA4SKeSSFAcr6YL0MnCZMZhYnRklE1f4/k8HLGfKc4/OTGJrz/zNcE+0gwwnrebi8HmMwFE27aPP37+Obx29XWcGJtkQJu6dwq2ACgCwBon7tWtZv1mGFN9vDb7qdzanfjnQ9//2T6YGWIZnIQDFHo1s0VdYxyyeRrLfgCGb1dUP28NhcIOm53YZqWYBleX5dU82Hcg8cGvh9kSuATOcY5TUiyFano4roeiONzoUBa6y7U6MDosa0IR26BQXqo0e/epEUxPfz++9cJLePm7L+Hs2XdwvsX16zfZRDU2msfG5jZmPvIB8d4UamKMEpdkdJZhJfHm2i185dvPoepWkTyewqnTIyiWZWkTmAZKAvHou+hmz4l7yyF63ZMz6Q6QgC3s5dAMiupdiW+vA5XLIdNgu+VdYomlqdR9GNR2lRzHxWKBwaLul9AkaHD5Dqj2q+K5LQCCTD0UYksbiQQV/7aN6YQqQ07VYwkYiFGkkqZkF6asjEsmqvHxHC780t8Tyr2G7y6/ysp9XbAbUvhUFNFKpvDDH/wh/KNfOi8AJ8MOb93wmRFRkh+Nc6siPlPc5kiukeERzg5fWbmO9bV1wW7WYVeJrQgmk8z1wz4ZOJMeQWflFe5UmUe0jyFgIPT6WAwWhwIswsXz4msSS/8Yhm4kUBOKulL1kA3nKKjeF8rmBLWmF2hjcivVACiIYcjWqqgDBkVQESoNZw04ToVNQb56f9dqKEGoWinjQx98BP9m/p/js3/053juW89jeHgYR44exa2ba8jlEgIsPokH7j/FVXHlQDzZklW1cPLVeMm0dePWTRR3dgRIJbB28yYoCPjkyaQ4vxizr8dXvzsJitrFZojDa4bqpLxLLLF0DhiGaUhnNbWioPIZ/q6RX/PraXFEN6TSJ1ZAFW6zyXr3Or/ebU+v9/Cm8iKkvI+NpeoNlyjTWybv+cwSNE2awly3xmU8PvkTH8TDD38fXnjxNapEjlQqw02XqJDh8WN5sU+V3dyO53IoMP1H46LIq+HMGCzNxOtXr2I0NyxYicUO72Q6heLWNpuxXMrDcMvx1Y/le0nCSYckQUn5WGLpL2Bw8T4qy6EllfmpvviPEBmXRMqefBcUsqqzecqDZWlcY4r+JhNRqerg3mMp3DWZg+tvcRFCTTEUTUU3EcjoKvGPQGOnsI1jR4Zx6tjDXDuKNkOAiu1WUWaw0JmtyPavshsfjb1Sc3FqOI0PnL0ff778ggy1rXgCIFxmNWkap2GoFrROfPVj+V4R8itFVdaNwSKWwQAG15Ly/EiQ8EN/c6VYVYKDIqTIh0GFCWUiH+oRUgQaNcfDYw9OYmxIR7W0Xe+UJwHHUb4SQ1axBZm0Esw47JoDR5NtWl3PRs2VfTDkeKQvhZlM0HlPvG+L7Wguj4/d/xC+8ubLnHVuGiYs8ZjJZuAJBkI9POC79T7fscRyyCUopxE2KwUh11HZxDFYxDIQqRvyPQ43NeumqHqUkyQU3AwP3ttjUWkfcpIXCgVe8QelRTyxlSoOjuTT+NFHT4nPb8B1SnUfiBcobc72rlcwVICzm89BjIM2jyveyuKGXHRK9fGWjZHouA4DRLFawicfeBc+OPUgarvDh2GZslAiAY/aYonlDpCgvIMf2i43AYtLMVjEMnDAqNWkeUk6rbUGf4S2W9yPtTlks9O6D1y+TrWlHMfmz0t/hIdS1cbH33cS77o3JUClwDWfWNGrAoUGswmd8ym8upOcgMqUZc7JmU4lQ3iYsvmSLC5IDZGoDIgAEnFO2p9YSnnnOsrVLaRQw794/4dxeiiPQrXCPo/trW3xKNiQI0uou3ZskorljmEY7UiQTBc7uGPZD8CwYds+qrYG29FQc8UmHoXO50f6Wz73QSkNVfFYc8CbLd4rlm1cu74qFLbLf2+XPDz2wFH8/I9OoVZZE2BSVUGomqpQq7Fpqe4v8V3FanTVptvgzG1NNVPSjCQ00+Ligjr1C9dk1zzu1U1gIxDMEO/7ThFVAVb3j4/gyid+Fj809X2oeg7Wt3dQFKBWEoPXrQzMZDa++rF8r0hQl2gx/iliGaTUfRg1oUyHUy7eedxDUq8yE5Dhqmwo4jyHoDS5r0xRzIx12VdbRlHZmMjsIJ8ETo+l8OmfOoG0dgOFrVVZ80mTXfOIHnB6hubxBhVVRX0ugkq5BAT8GWYd9Jw65XncNElmD6rEOwEeTq3MNa4S6UlZpt11ULZdnBnK4Df/7k/g9547hS9+5znoCRP3jIzCNNMcahtLLHcIGDRrpBV0AVyIf6ZY9kO0wGfx5c/+mk9Z275QzDubG0gmM0gkU0KRU2KeD9NKqCK2hsxzoNW8WMkbiQTXaDKSCVbwVNbcIHuRX+W8DPosVZnVDZP5TKW4KZiAUNiJNFy7zJFU9Dl+n0DDrXF3DJ275snoLWrUYZgyQ5z/VhVvDctit8rmrTcwNJznzBC7UhXsIcmgRL4Qy7BgWWnsVMoMMvS9qPueaWj2qQf+ftuoUffnxBLL/ks4ES9IEo2BIpZ9E8KKOsOwEpnv6l4hW6vsCF2/I5S4I7YKlx73qDSImxRKW/oWKAbWcxPwHQEYHulcF5qRYFORpskCI75XgaslBZaI4wgFblgpmTAnQIJ6WPgCULxaVXxO1pHSDU35M2yZwU0RU4ZiJL5gFVYGyoHB+R/UZlXXk4KV1FAtXkcmTd9CAFS1IoYnwMUyODmPWrTqvo0M+00sgZDUh4PYkn6j0x8rllgOSC4gdmTHcpgYRiyxxBJLLLHEgBFLLLHEEksMGLHEEkssscSAEUssscQSyyGS/y/AANVv0Pd2EUaGAAAAAElFTkSuQmCC'/>" +
+                        "</a><br/><br/><h1>Ancestor Search for <a href='https://www.geni.com/{{userid}}'>{{username}}</a></h1></center><br/>" +
+                        shadowbox + "<center>" + document.getElementById("statusinfo").innerHTML + "</center><br/>" +
+                        document.getElementById("pdfcontainer").innerHTML + "</div><br/>" + shadowbox + document.getElementById("completeness").innerHTML +
+                        "</div></center></body></html>";
+                return source;
+            },
+            swf:'/static/media/downloadify.swf',
+            downloadImage:'/static/images/download3.png',
+            width:154,
+            height:56,
+            transparent:true,
+            append:false
+        });
+    }
+</script>
+<center>
+<br/>
+<table width="100%"><tr><td align="left">
+    <div><h1>History Search for {{username}}<img src="/static/images/user1.png"
+                                                                          style='margin-bottom: -3px; padding-left: 2px; cursor:pointer;'
+                                                                          onclick='changeUser()'
+                                                                          title="Change Focus Person"
+                                                                          alt="Change Focus Person"></h1>
+    </div>
+    <div style="margin-top: 15px; margin-bottom: -6px;">
+        <div class="slideDownUser" style="display: none; padding-bottom: 15px;"><input
+                style="height: 24px; width: 200px;"
+                id="userfield"
+                onkeypress="entsub(event,this.form);"/>
+            <button style="margin-left: 8px;" onclick="submitProfile();">Change Person</button>
+            <a href="/history"><img src="/static/images/reset.png" style="padding-left: 11px; padding-bottom:2px; vertical-align: middle; cursor:pointer;" title="Reset to Current User" alt="Reset to Current User"></a>
+        </div>
+    </div>
+    <div>
+        <table>
+            <tr style="cursor:pointer;" onclick='changeOptions()'>
+                <td>
+                    <img src="/static/images/admin.png" style='margin-top: 2px;margin-right: 3px;'
+                         title="Change Search Options"
+                         alt="Change Search Options"></td>
+                <td valign="center" style="padding-right: 5px;"><strong>Change
+                    the Search
+                    Options</strong>
+                </td>
+                <td style="padding-left:3px;">
+                    <span class='ctaadd ctaadd-lightgray' style='float:right;'>
+                        <span style="display: inline-block;"></span>
+                        <span id="limiticon" style="padding-left: 2px; padding-right: 2px;"><img
+                                src="/static/images/top2.png" style="margin-bottom: -3px;" alt="Limit Results"
+                                title="Limit Results"></span>
+                        <span id="completeicon" style="padding-left: 2px; padding-right: 2px;"><img
+                                src="/static/images/tree.png" style="margin-bottom: -2px;" alt="Tree Completeness"></span>
+                        <span id="projecticon" style="padding-left: 2px; padding-right: 2px;"><img
+                                src="/static/images/project.png" style="margin-bottom: -3px;" alt="Project Profiles"
+                                title="Project Profiles"></span>
+                        <span id="mastericon" style="padding-left: 2px; padding-right: 2px; display: none;"><img
+                                src="/static/images/masterprofile.png" style="margin-bottom: -3px;"
+                                alt="Master Profiles" title="Master Profiles"></span>
+                        <span id="problemicon" style="padding-left: 2px; padding-right: 2px; display: none;"><img
+                                src="/static/images/warning.png" style="margin-bottom: -3px;" alt="Problem Profiles"
+                                title="Problem Profiles"></span>
+                        <span id="mergeicon" style="padding-left: 2px; padding-right: 2px; display: none;"><img
+                                src="/static/images/merge.png" style="margin-bottom: -3px;" alt="Pending Merges"
+                                title="Pending Merges"></span>
+                        <span id="siblingicon" style="padding-left: 1px; padding-right: 2px; display: none;"><img
+                                src="/static/images/siblings.png" style="margin-bottom: -3px;" alt="Include Siblings"
+                                title="Include Siblings"></span>
+                        <span id="followicon" style="padding-right: 1px; display: none;"><img
+                                src="/static/images/follow.png" style="margin-bottom: -3px;" alt="Follow Profiles"
+                                title="Follow Profile"></span>
+                        <span style="display: inline-block;"></span>
+                    </span>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div id="searchoptions" class="slideDownOptions" style="display: none; position: absolute; float:left; z-index: 100; margin-left: -5px; margin-top: 7px;">
+        <table class="shadoweffect-business" style="margin-top: 2px;">
+            <tr>
+                <td><img src="/static/images/top2.png" style="margin-bottom: -3px; padding-right: 1px;"></td>
+                <td style="padding-top: 1px;"><input type="checkbox" id="limitcheck" checked="true"
+                                                     onchange='handleChange();'></td>
+                <td valign="center" style="padding-bottom: 2px;">Limit Search Results to <input
+                        style="height: 16px; width: 22px;"
+                        id="genlimit" value="15"/> Generations
+                </td>
+                <td align="right">
+                    <img src="/static/images/help.png"
+                         style="padding-left: 3px; margin-bottom: -3px; cursor:pointer;" title="Limit Search Tip"
+                         alt="Limit Search Tip" onclick='limitHelp()'></td>
+            </tr>
+            <tr>
+                <td colpsan='4' style="padding-top: 4px;"></td>
+            </tr>
+            <tr>
+                <td><img src="/static/images/tree.png" style="margin-bottom: -3px; padding-right: 1px;"></td>
+                <td style="padding-top: 1px;"><input type="checkbox" id="completecheck" checked="true"
+                                                     onchange='handleChange();'></td>
+                <td valign="center" style="padding-bottom: 2px;">Include Tree Completeness during
+                    Search
+                </td>
+                <td align="right">
+                    <img src="/static/images/help.png"
+                         style="padding-left: 3px; margin-bottom: -3px; cursor:pointer;" title="Tree Completeness Tip"
+                         alt="Tree Completeness Tip" onclick='completeHelp()'></td>
+            </tr>
+            <tr>
+                <td colpsan='4' style="padding-top: 4px;"></td>
+            </tr>
+            <tr>
+                <td><img src="/static/images/project.png" style="margin-bottom: -3px; padding-right: 1px;"></td>
+                <td style="padding-top: 1px;"><input type="checkbox" id="projectcheck" checked="true"
+                                                     onchange='handleChange();'></td>
+                <td valign="center" style="padding-bottom: 2px;">Include <select id="projectselect">
+                    <option value="all">All Project Profiles</option>
+                    <option value="exlist" selected="selected">Non-Excluded Projects</option>
+                    <option value="inlist">Defined Project List</option>
+
+                    <!--
+                    <option value="exlist" selected="selected">Projects (except excluded)</option>
+                    <option value="inlist">Projects (only included)</option>-->
+                </select> in Results
+                </td>
+                <td align="right">
+                    <img src="/static/images/help.png"
+                         style="padding-left: 3px; margin-bottom: -3px; cursor:pointer;" title="Project Profile Tip"
+                         alt="Project Profile Tip" onclick='projectHelp()'></td>
+            </tr>
+            <tr>
+                <td colpsan='4' style="padding-top: 4px;"></td>
+            </tr>
+            <tr>
+                <td><img src="/static/images/masterprofile.png" style="margin-bottom: -3px; padding-right: 1px;"></td>
+                <td style="padding-top: 1px;"><input type="checkbox" id="mastercheck"
+                                                     onchange='handleChange();'></td>
+                <td valign="center" style="padding-bottom: 2px;">Include <select id="masterselect" onchange="handleChange()">
+  <option value="true" selected="selected">Master Profiles</option>
+  <option value="false">Non-Master Public</option>
+</select> in Results
+                </td>
+                <td align="right">
+                    <img src="/static/images/help.png"
+                         style="padding-left: 3px; margin-bottom: -3px; cursor:pointer;" title="Master Profile Tip"
+                         alt="Master Profile Tip" onclick='masterHelp()'></td>
+            </tr>
+            <tr>
+                <td colpsan='4' style="padding-top: 4px;"></td>
+            </tr>
+            <tr>
+                <td><img src="/static/images/warning.png" style="margin-bottom: -2px; padding-right: 1px;"></td>
+                <td style="padding-top: 1px;"><input type="checkbox" id="problemcheck" onchange='handleChange();'>
+                </td>
+                <td valign="center" style="padding-bottom: 2px;">Include Problem Profiles in
+                    Search Results
+                </td>
+                <td align="right">
+                    <img src="/static/images/help.png"
+                         style="padding-left: 3px; margin-bottom: -3px; cursor:pointer;" title="Problem Profile Tip"
+                         alt="Problem Profile Tip" onclick='problemHelp()'></td>
+            </tr>
+            <tr>
+                <td colpsan='4' style="padding-top: 4px;"></td>
+            </tr>
+            <tr>
+                <td><img src="/static/images/merge.png" style="margin-bottom: -3px; padding-right: 1px;"></td>
+                <td style="padding-top: 1px;"><input type="checkbox" id="mergecheck"
+                                                     onchange='handleChange();'></td>
+                <td valign="center" style="padding-bottom: 2px;">Include Pending Merges in Search Results
+                </td>
+                <td align="right">
+                    <img src="/static/images/help.png"
+                         style="padding-left: 3px; margin-bottom: -3px; cursor:pointer;" title="Pending Merges Search Tip"
+                         alt="Pending Merges Search Tip" onclick='mergeHelp()'></td>
+            </tr>
+            <tr>
+                <td colpsan='4' style="padding-top: 4px;"></td>
+            </tr>
+            <tr>
+                <td><img src="/static/images/siblings.png" style="margin-bottom: -3px; padding-right: 1px;"></td>
+                <td style="padding-top: 1px;"><input type="checkbox" id="siblingcheck" checked="true"
+                                                     onchange='handleChange();'></td>
+                <td valign="center" style="padding-bottom: 2px;">Include Siblings in Profile Search Results
+                </td>
+                <td align="right">
+                    <img src="/static/images/help.png"
+                         style="padding-left: 3px; margin-bottom: -3px; cursor:pointer;" title="Sibling Search Tip"
+                         alt="Sibling Search Tip" onclick='siblingHelp()'></td>
+            </tr>
+            <tr style="">
+                <td><img src="/static/images/follow.png" style="margin-bottom: -2px; padding-right: 1px;padding-top: 5px;"></td>
+                <td style="padding-top: 1px;padding-top: 5px;"><input type="checkbox" id="followcheck"
+                                                     onchange='handleChange();'></td>
+                <td valign="center" style="padding-bottom: 2px; padding-top: 5px;"><select id="followselect" onchange="handleChange()">
+  <option value="true" selected="selected">Follow</option>
+  <option value="false">Unfollow</option>
+</select> Public Profiles in the Search
+                </td>
+                <td align="right" style="padding-top: 5px;">
+                    <img src="/static/images/help.png"
+                         style="padding-left: 3px; margin-bottom: -3px; cursor:pointer;" title="Sibling Search Tip"
+                         alt="Sibling Search Tip" onclick='followHelp()'></td>
+            </tr>
+
+        </table>
+
+    </div>
+    </td><td align="right" valign="top">
+         <div>
+            <table>
+                <tr>
+                    <td  align="right" valign="top">
+                        <div style="display:block;  margin-top: 8px; padding-right: 6px;">
+                            <button id="searchbutton" align="MIDDLE" onClick="goHistory();" class="cta cta-green">Start Search</button>
+                        </div>
+                    </td>
+                    <td align="right" valign="top">
+                        <div id="downloadify" style="display:block; margin-top: 2px;  padding-left: 3px; padding-right: 1px;">
+                            <button valign="top" style="margin-top: 6px; padding-left: 6px; margin-right: 5px; margin-left:4px;" onClick="alert('You must have Flash installed to download this file.');"
+                                    class="cta cta-blue">&nbsp;&nbsp;&nbsp;Save To Disk
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </td></tr></table>
+   <div class="separator"></div>
+    <div style="margin-left: 370px;">
+            <div class="slideDownProject"
+                 style="display: none; font-size: small; min-width: 380px; max-width:650px; text-align: left;">
+                <strong>Project
+                    Profiles: </strong>These profiles belong to a <a href="http://wiki.geni.com/index.php/Projects"
+                                                                     target="_blank">Geni
+                Project</a> and usually indicate historical notability. HistoryLink will use the
+                projects <a href="/projects">listed in this application</a> for comparison, which can be
+                expanded by the
+                users. Future developments of the Geni API may eliminate the requirement for our own project list.
+            </div>
+            <div class="slideDownMaster"
+                 style="display: none; font-size: small; min-width: 380px; max-width:650px; text-align: left;">
+                <strong>Master
+                    Profiles: </strong>The designation
+                of <a href="http://wiki.geni.com/index.php/Master_Profile" target="_blank">Master Profile</a> can be a
+                weak association to historical significance. It is an indication of quality
+                and often a common profile for joining family trees
+                (<a href="http://wiki.geni.com/index.php/Profile_merging" target="_blank">merges</a>). Including Master
+                Profiles in
+                search results may find profiles that have not yet been included in our projects, but could also produce
+                many false positives for historic notability.  Selecting Master Profiles or Non-Master Public can also be
+                helpful for curators looking to identify profiles that belong to one of the groups.
+            </div>
+            <div class="slideDownProblem"
+                 style="display: none; font-size: small; min-width: 380px; max-width:650px; text-align: left;">
+                <strong>Problem
+                    Profiles: </strong>This option can identify <a
+                    href="http://help.geni.com/entries/516905-What-does-the-Yellow-Triangle-in-the-lower-right-hand-corner-of-a-node-mean-" target="_blank">parent conflicts</a> on direct ancestors.
+                    It can <also></also> be helpful for non-curators looking to identify <a
+                    href="http://wiki.geni.com/index.php/Zombie" target="_blank">Zombies</a> and <a
+                    href="http://wiki.geni.com/index.php/Private_Profile" target="_blank">Private</a> profiles that
+                should be <a
+                    href="http://wiki.geni.com/index.php/Public_Profile" target="_blank">Public</a>.
+                Future options may include adding some basic data validation for common genealogy problems
+                that usually indicate bad data, such as people living past a certain number of years, number of children
+                attributed to a couple being larger than a certain threshold, or children's birth dates that occur before
+                a parent's birth or more than a year after a parent's death date.
+            </div>
+            <div class="slideDownLimit"
+                 style="display: none; font-size: small; min-width: 380px; max-width:650px; text-align: left;">
+                <strong>Limit Results: </strong>Searching for ancestors can take an extended period of time.
+                Limiting the results provides a quicker completion time and reduces the burden placed on the server.
+                Unchecking this option will search all ancestors to the very top of the tree, possibly over 100 generations.
+            </div>
+            <div class="slideDownComplete"
+                 style="display: none; font-size: small; min-width: 380px; max-width:650px; text-align: left;">
+                <strong>Tree Completeness: </strong>This option will analyze each generation and show how complete
+                the generation is against the total possible direct ancestors.  This will only analyze parents and does not
+                consider siblings.  The tree completeness is added below the search results.
+            </div>
+            <div class="slideDownMerges"
+                 style="display: none; font-size: small; min-width: 380px; max-width:650px; text-align: left;">
+                <strong>Pending Merges: </strong>This option will include profiles that have pending merges.
+                This may be helpful in identifying profiles that need approval, verification, or notification.
+            </div>
+            <div class="slideDownSiblings"
+                 style="display: none; font-size: small; min-width: 380px; max-width:650px; text-align: left;">
+                <strong>Include Siblings: </strong>This option will include siblings in searches which adds
+                aunts and uncles to the search.  Disabling this option will focus your search on only your direct
+                ancestors - your parents, their parents, their parents, etc.
+            </div>
+            <div class="slideDownFollow"
+                 style="display: none; font-size: small; min-width: 380px; max-width:650px; text-align: left;">
+                <strong>Follow Profiles: </strong>This option will mark the follow or unfollow feature for each profile in the search path
+                (direct ancestors and siblings, or direct ancestors) as it progresses.  You'll want to limit the generation account to something reasonable
+                as you can end up following too many profiles, resulting in discussion spam.
+                The feature was created to allow you to automatically follow public ancestors you may not manage.
+                To know more about following profiles, see <a href="https://www.geni.com/blog/introducing-following-3141.html" target="_blank">Introducing Following</a>.
+            </div>
+        </div>
+</center>
+        <br/>
+<div class="shadoweffect-business">
+    <div style="padding-left: 30px; padding-right: 30px;">
+        <div id="statusinfo" style="text-align: center;"></div>
+        <div id="historycount"></div>
+        <div id="processing"></div>
+        <div id="note"><center><h3><a href="/projects"><img
+                                src="/static/images/project.png" border="0" style="margin-bottom: -3px; padding-right: 4px;" alt=""
+                                title="">View and Add HistoryLink Projects</a></h3></center>
+            </br>History Search has an option to identify projects that are listed in our database (Defined Projects).  If there are particular projects or history you are interested in seeing in that set, please make sure they are listed or add them if needed.
+            <br/><div class="separator" style="margin-top: 15px; padding-bottom: 6px;"></div>
+            <strong>Note: </strong>Investigating a tree history could involve <a
+        href="https://www.youtube.com/watch?v=BhtgINeaJWg&feature=share" target="_blank">exponential queries</a>, please
+    be patient. The page will update automatically with progress every 5 seconds. While it is common to be related to the same ancestor via different pathways, History Search will only report an
+    ancestor once per search option. The step-by-step pathway to these ancestors can be viewed on Geni using the relationship feature.</div>
+        <div id="pdfcontainer" style="display: none;">
+            <div style="margin-left: 1px; float: left;"><strong>Ancestors</strong></div>
+            <div style="margin-right: 3px; float: right;">
+                <strong><span id="hitnote">Projects</span></strong>
+            </div>
+            <br/>
+            <hr/>
+            <div id="historylistresults"></div>
+        </div>
+    </div>
+    <div id="count"></div>
+</div>
+<div id="treearea" style="display: none;">
+    <br/>
+    <div class="shadoweffect-business">
+        <div style="padding-left: 30px; padding-right: 30px;">
+            <div id="completeness"></div>
+        </div>
+    </div>
+</div>
+<br/>
+{% end %}

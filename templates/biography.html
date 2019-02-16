@@ -1,0 +1,841 @@
+{% extends "base.html" %}
+{% block body %}
+  <script>
+var year = 31557600; //365.25
+
+var biography = null;
+var genifamily, focusid, tablink;
+var genifamilydata = {};
+var uniondata = [];
+if (typeof String.prototype.startsWith != 'function') {
+    String.prototype.startsWith = function (str) {
+        if (typeof str === "undefined") {
+            return false;
+        }
+        return this.slice(0, str.length) == str;
+    }
+}
+if (typeof String.prototype.endsWith != 'function') {
+    String.prototype.endsWith = function (str) {
+        if (typeof str === "undefined") {
+            return false;
+        }
+        return this.substring(this.length - str.length, this.length) === str;
+    }
+}
+if (!String.prototype.contains) {
+    String.prototype.contains = function () {
+        return String.prototype.indexOf.apply(this, arguments) !== -1;
+    }
+}
+function exists(object) {
+    return (typeof object !== "undefined" && object !== null);
+}
+
+function initializeContent() {
+     tablink = document.getElementById('p').value;
+     queryGeni();
+     
+}
+
+function queryGeni() {
+    focusid = getProfile(tablink).replace("?profile=", "");
+    if (focusid === "" && tablink !== "https://www.geni.com/family-tree") {
+        return;
+    }
+    $("#processing").show();
+    var args = "fields=id,guid,name,title,first_name,middle_name,last_name,maiden_name,suffix,display_name,names,occupation,gender,deleted,birth,baptism,death,cause_of_death,burial,is_alive,marriage,divorce,public";
+    var url = "https://historylinktools.herokuapp.com/smartsubmit?profile=" + focusid + "&family=raw&action=immediate-family&" + args;
+    $.get(url,
+       function(response){
+        if (response === "[]" || response === "") {
+            genifamily = [];
+        } else {
+            try {
+                genifamily = response;
+            } catch (e) {
+                console.log(e);
+                genifamily = [];
+            }
+            if (!exists(genifamily) || !exists(genifamily["focus"])) {
+                genifamily = [];
+            } else {
+                focusid = genifamily["focus"].id;
+                var nodes = genifamily["nodes"];
+                for (var node in nodes) {
+                    if (!nodes.hasOwnProperty(node)) continue;
+                    if (nodes[node].id.startsWith("union")) {
+                        uniondata[nodes[node].id] = nodes[node];
+                    } else if (!nodes[node].deleted) {
+                        genifamilydata[nodes[node].id] = new GeniPerson(nodes[node]);
+                    }
+                }
+            }
+            buildProfile();
+            $("#processing").hide();
+        }
+    });
+}
+
+
+function GeniPerson(obj) {
+    this.person = obj;
+    this.get = function (path, subpath) {
+        var obj = this.person;
+        if (path == "photo_urls") {
+            if (checkNested(this.person,"photo_urls", "medium")) {
+                return this.person["photo_urls"].medium;
+            } else {
+                return geniPhoto(this.person.gender);
+            }
+        } else if (!obj.hasOwnProperty(path)) {
+            return "";
+        } else if (!exists(subpath)) {
+            if (typeof obj[path] === 'string' || obj[path] instanceof String) {
+                obj[path] = obj[path].replace(/"/g, "&quot;");
+            } else {
+                for (var i = 0; i < obj[path].length; i++) {
+                    obj[path][i] = obj[path][i].replace(/"/g, "&quot;");
+                }
+            }
+            return obj[path];
+        } else {
+            obj = obj[path];
+            if (subpath === "location_string" && exists(obj.location) && exists(obj.location.formatted_location)) {
+                subpath = "location.formatted_location";
+            }
+            if (subpath === "date.formatted_date" && typeof obj["date"] === 'string') {
+                subpath = "date";
+            }
+            var args = subpath.split(".");
+            for (var i = 0; i < args.length; i++) {
+                if (!obj || !obj.hasOwnProperty(args[i])) {
+                    return "";
+                }
+                obj = obj[args[i]];
+            }
+            return obj;
+        }
+    };
+    this.set = function (path, data) {
+       this.person[path] = data;
+    };
+    this.isLocked = function (path, subpath) {
+        var obj = this.person;
+        if (!obj.hasOwnProperty("locked_fields")) {
+            return false;
+        }
+        obj = obj["locked_fields"];
+        if (!obj.hasOwnProperty(path)) {
+            return false;
+        } else if (!exists(subpath)) {
+            return obj[path];
+        } else {
+            obj = obj[path];
+            var args = subpath.split(".");
+            for (var i = 0; i < args.length; i++) {
+                if (!obj || !obj.hasOwnProperty(args[i])) {
+                    return false;
+                }
+                obj = obj[args[i]];
+            }
+            return obj;
+        }
+    };
+    this.lockIcon = function(path, subpath) {
+        if (this.isLocked(path, subpath)) {
+            return "lock.png";
+        } else {
+            return "right.png";
+        }
+    };
+}
+
+
+function getProfile(profile_id) {
+    //Gets the profile id from the Geni URL
+    if (profile_id.length > 0) {
+        var startid = profile_id.toLowerCase();
+        profile_id = decodeURIComponent(profile_id).trim();
+        if (profile_id.indexOf("&resolve=") != -1) {
+            profile_id = profile_id.substring(profile_id.lastIndexOf('#') + 1);
+        }
+        if (profile_id.indexOf("profile-") != -1) {
+            profile_id = profile_id.substring(profile_id.lastIndexOf('/') + 1);
+        }
+        if (profile_id.indexOf("#/tab") != -1) {
+            profile_id = profile_id.substring(0, profile_id.lastIndexOf('#/tab'));
+        }
+        if (profile_id.indexOf("/") != -1) {
+            //Grab the GUID from a URL
+            profile_id = profile_id.substring(profile_id.lastIndexOf('/') + 1);
+        }
+        if (profile_id.indexOf("?through") != -1) {
+            //In case the copy the profile url by navigating through another 6000000002107278790?through=6000000010985379345
+            //But skip 6000000029660962822?highlight_id=6000000029660962822#6000000028974729472
+            profile_id = "profile-g" + profile_id.substring(0, profile_id.lastIndexOf('?'));
+        }
+        if (profile_id.indexOf("?from_flash") != -1) {
+            profile_id = "profile-g" + profile_id.substring(0, profile_id.lastIndexOf('?'));
+        }
+        if (profile_id.indexOf("?highlight_id") != -1) {
+            profile_id = "profile-g" + profile_id.substring(profile_id.lastIndexOf('=') + 1, profile_id.length);
+        }
+        if (profile_id.indexOf("#") != -1) {
+            //In case the copy the profile url by navigating in tree view 6000000001495436722#6000000010985379345
+            if (profile_id.contains("html5")) {
+                profile_id = "profile-" + profile_id.substring(profile_id.lastIndexOf('#') + 1, profile_id.length);
+            } else {
+                profile_id = "profile-g" + profile_id.substring(profile_id.lastIndexOf('#') + 1, profile_id.length);
+            }
+        }
+        var isnum = /^\d+$/.test(profile_id);
+        if (isnum) {
+            if (profile_id.length > 16) {
+                profile_id = "profile-g" + profile_id;
+            } else if (startid.contains("www.geni.com/people") || startid.contains("www.geni.com/family-tree")) {
+                profile_id = "profile-g" + profile_id;
+            } else {
+                profile_id = "profile-" + profile_id;
+            }
+        }
+        var validate = profile_id.replace("profile-g", "").replace("profile-", "");
+        if (isNaN(validate)) {
+            profile_id = "";
+        }
+        if (profile_id.indexOf("profile-") != -1 && profile_id !== "profile-g") {
+            return "?profile=" + profile_id;
+        } else if (tablink !== "https://www.geni.com/family-tree") {
+            console.log("Profile ID not detected: " + startid);
+            console.log("URL: " + tablink);
+            return "";
+        }
+    }
+    return "";
+}
+
+function appendBio() {
+    var screenopen = ($("#add-language-button").length !== 0);
+    if (biography == null && screenopen) {
+        setTimeout(appendBio, 50);
+    } else if (screenopen) {
+        $("*").css("cursor", "default");
+        var textarea = $("#page_profile_detail_strings_en-US_about_me");
+        textarea.val(biography + textarea.val().replace(getSelection(), "").trim());
+    } else {
+        //In case the screen is closed
+        $("*").css("cursor", "default");
+    }
+}
+
+function dateFormat(dateval) {
+    var eventdate = dateval.formatted_date;
+    if (eventdate.startsWith("circa") || eventdate.startsWith("before") || eventdate.startsWith("after") || eventdate.startsWith("between")) {
+        return " " + eventdate;
+    } else if (exists(dateval.day)) {
+        return " on " + eventdate;
+    } else {
+        return " in " + eventdate;
+    }
+}
+
+function getSelection() {
+	return (!!document.getSelection) ? document.getSelection() :
+	       (!!window.getSelection)   ? window.getSelection() :
+	       document.selection.createRange().text;
+}
+
+
+function getFocus() {
+    return genifamily["focus"].id;
+}
+
+function getParents() {
+    var familyset = [];
+    var focusid = getFocus();
+    var focus = getGeniData(focusid, "edges");
+    for (var union in focus) {
+        if (!focus.hasOwnProperty(union)) continue;
+        if (isChild(focus[union].rel) && !exists(focus[union].rel_modifier)) {
+            var edges = uniondata[union]["edges"];
+            for (var profile in edges) {
+                if (!edges.hasOwnProperty(profile)) continue;
+                if (isPartner(edges[profile].rel)) {
+                    var person = genifamilydata[profile];
+                    person.set("relation", getRelationship("parent", person.get("gender")));
+                    person.set("union", getUnionData(uniondata[union], "id"));
+                    person.set("status", getUnionData(uniondata[union], "status"));
+                    if ("marriage" in uniondata[union]) {
+                        person.set("marriage", uniondata[union]["marriage"]);
+                    }
+                    if ("divorce" in uniondata[union]) {
+                        person.set("divorce", uniondata[union]["divorce"]);
+                    }
+                    familyset.push(profile);
+                }
+            }
+        }
+    }
+    return familyset;
+}
+
+function getParentSets(focus, parents) {
+    var focusedge = getGeniData(focus, "edges");
+    var parentset = {};
+    for (var union in focusedge) {
+        if (!focusedge.hasOwnProperty(union)) continue;
+        if (isChild(focusedge[union].rel)) {
+            for (var i=0; i < parents.length; i++) {
+                var parentedge = getGeniData(parents[i], "edges");
+                for (var punion in parentedge) {
+                    if (!parentedge.hasOwnProperty(punion)) continue;
+                    if (punion === union) {
+                        if (!exists(parentset[union])) {
+                            parentset[union] = [];
+                        }
+                        if (parentset[union].indexOf(parents[i]) == -1) {
+                            parentset[union].push(parents[i]);
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+    return parentset;
+}
+
+function getChildren(focusid, partner) {
+    var familyset = [];
+    var focus = getGeniData(focusid, "edges");
+    for (var union in focus) {
+        if (!focus.hasOwnProperty(union)) continue;
+        if (isPartner(focus[union].rel)) {
+            if (!exists(uniondata[union])) {
+                return familyset;
+            }
+            var edges = uniondata[union]["edges"];
+            var loopedges = false;
+            if (exists(partner) && partner in edges) {
+                loopedges = true;
+            } else if (!exists(partner)) {
+                loopedges = true;
+            }
+            if (loopedges) {
+                for (var profile in edges) {
+                    if (!edges.hasOwnProperty(profile)) continue;
+                    if (isChild(edges[profile].rel) && !exists(edges[profile].rel_modifier)) {
+
+                        var person = genifamilydata[profile];
+                        person.set("relation", getRelationship("child", person.get("gender")));
+                        person.set("union", getUnionData(uniondata[union], "id"));
+                        person.set("status", "");
+                        familyset.push(profile);
+                    }
+                }
+            }
+
+        }
+    }
+    return familyset;
+}
+
+function getSiblings() {
+    var familyset = [];
+    var focusid = getFocus();
+    var focus = getGeniData(focusid, "edges");
+    for (var union in focus) {
+        if (!focus.hasOwnProperty(union)) continue;
+        if (isChild(focus[union].rel) && !exists(focus[union].rel_modifier)) {
+            var edges = uniondata[union]["edges"];
+            for (var profile in edges) {
+                if (!edges.hasOwnProperty(profile)) continue;
+                if (isChild(edges[profile].rel) && profile !== focusid) {
+                    var person = genifamilydata[profile];
+                    person.set("relation", getRelationship("sibling", person.get("gender")));
+                    person.set("union", getUnionData(uniondata[union], "id"));
+                    person.set("status", "");
+                    familyset.push(profile);
+                }
+            }
+        }
+    }
+    return familyset;
+}
+
+function getPartners() {
+    var familyset = [];
+    var focusid = getFocus();
+    var focus = getGeniData(focusid, "edges");
+    for (var union in focus) {
+        if (!focus.hasOwnProperty(union)) continue;
+        if (isPartner(focus[union].rel)) {
+            var edges = uniondata[union]["edges"];
+            for (var profile in edges) {
+                if (!edges.hasOwnProperty(profile)) continue;
+                if (isPartner(edges[profile].rel) && profile !== focusid) {
+                    var person = genifamilydata[profile];
+                    person.set("relation", getRelationship("partner", person.get("gender")));
+                    person.set("union", getUnionData(uniondata[union], "id"));
+                    person.set("status", getUnionData(uniondata[union], "status"));
+                    if ("marriage" in uniondata[union]) {
+                        person.set("marriage", uniondata[union]["marriage"]);
+                    }
+                    if ("divorce" in uniondata[union]) {
+                        person.set("divorce", uniondata[union]["divorce"]);
+                    }
+                    familyset.push(profile);
+                }
+            }
+        }
+    }
+    return familyset;
+}
+
+
+function getGeniData(profile, value, subvalue) {
+    if (profile === "add") {
+        if (value === "photo_urls") {
+            return geniPhoto('unknown');
+        }
+        return "";
+    }
+    var person = genifamilydata[profile];
+    if (!exists(person)) {
+        return "";
+    }
+    return person.get(value, subvalue);
+}
+
+function getUnionData(union, value) {
+    if (exists(union[value])) {
+        return union[value];
+    } else {
+        return "";
+    }
+}
+
+
+function isFemale(title) {
+    if (!exists(title)) { return false; }
+    title = title.replace(" (implied)", "");
+    return (title === "wife" || title === "ex-wife" || title === "mother" || title === "sister" || title === "daughter" || title === "female");
+}
+
+function isMale(title) {
+    if (!exists(title)) { return false; }
+    title = title.replace(" (implied)", "");
+    return (title === "husband" || title === "ex-husband" || title === "father" || title === "brother" || title === "son" || title === "male");
+}
+
+function isSibling(relationship) {
+    if (!exists(relationship)) { return false; }
+    relationship = relationship.replace(" (implied)", "");
+    return (relationship === "siblings" || relationship === "sibling" || relationship === "brother" || relationship === "sister" || relationship === "bro" || relationship === "sis");
+}
+
+function isChild(relationship) {
+    if (!exists(relationship)) { return false; }
+    relationship = relationship.replace(" (implied)", "");
+    return (relationship === "children" || relationship === "child" || relationship === "son" || relationship === "daughter" || relationship === "dau");
+}
+
+function isParent(relationship) {
+    if (!exists(relationship)) { return false; }
+    relationship = relationship.replace(" (implied)", "");
+    return (relationship === "parents" || relationship === "father" || relationship === "mother" || relationship === "parent" || relationship === "moth" || relationship === "fath");
+}
+
+function isPartner(relationship) {
+    if (!exists(relationship)) { return false; }
+    relationship = relationship.replace(" (implied)", "");
+    return (relationship === "spouse" || relationship === "wife" || relationship === "husband" || relationship === "partner" || relationship === "ex-husband" || relationship === "ex-wife" || relationship === "ex-partner" || relationship === "ex_husband" || relationship === "ex_wife" || relationship === "ex_partner" || relationship === "spouses");
+}
+
+
+function getRelationship(relationship, gender) {
+    if (isParent(relationship)) {
+        if (isMale(gender)) {
+            return "father";
+        } else if (isFemale(gender)) {
+            return "mother";
+        } else {
+            return "parent";
+        }
+    } else if (isPartner(relationship)) {
+        if (isMale(gender)) {
+            return "husband";
+        } else if (isFemale(gender)) {
+            return "wife";
+        } else {
+            return "spouse";
+        }
+    } else if (isSibling(relationship)) {
+        if (isMale(gender)) {
+            return "brother";
+        } else if (isFemale(gender)) {
+            return "sister";
+        } else {
+            return "sibling";
+        }
+    } else if (isChild(relationship)) {
+        if (isMale(gender)) {
+            return "son";
+        } else if (isFemale(gender)) {
+            return "daughter";
+        } else {
+            return "child";
+        }
+    }
+    return "";
+}
+
+function reverseRelationship(relationship) {
+    if (relationship === "wife") {
+        return "husband";
+    } else if (relationship === "husband") {
+        return "wife";
+    } else if (relationship === "son" || relationship === "daughter" || relationship === "child" || relationship === "children") {
+        if (focusgender === "male") {
+            return "father";
+        } else if (focusgender === "female") {
+            return "mother";
+        } else {
+            return "parent";
+        }
+    } else if (relationship === "parents" || relationship === "parent" || relationship === "father" || relationship === "mother") {
+        if (focusgender === "male") {
+            return "son";
+        } else if (focusgender === "female") {
+            return "daughter";
+        } else {
+            return "child";
+        }
+    } else if (relationship === "siblings" || relationship === "sibling" || relationship === "sister" || relationship === "brother") {
+        if (focusgender === "male") {
+            return "brother";
+        } else if (focusgender === "female") {
+            return "sister";
+        } else {
+            return "sibling";
+        }
+    } else if (relationship === "partner") {
+        return "partner";
+    } else if (relationship === "ex-wife") {
+        return "ex-husband";
+    } else if (relationship === "ex-husband") {
+        return "ex-wife";
+    } else if (relationship === "ex-partner") {
+        return "ex-partner";
+    } else {
+        return "";
+    }
+}
+
+function buildProfile() {
+    if (biography == null) {
+        //In case edit is clicked twice - only need to build this once.
+        var focus = getFocus();
+        var parents = getParents();
+        var partners = getPartners();
+        var bio = "==Biography==\n'''" + getGeniData(focus,"name") + "''' ";
+
+        var birth = getGeniData(focus, "birth");
+        var bap = getGeniData(focus, "baptism");
+        var death = getGeniData(focus, "death");
+        var deathcause = getGeniData(focus, "cause_of_death");
+        var burial = getGeniData(focus, "burial");
+        var occupation = getGeniData(focus, "occupation")
+
+        if (birth !== "") {
+            bio += "was born";
+            if (exists(birth.date)) {
+                bio += dateFormat(birth.date);
+            }
+            if (exists(birth.location)) {
+                bio += " in " + birth.location.formatted_location;
+            }
+            if (bap !== "") {
+                bio += " and ";
+            } else {
+                bio += ". ";
+            }
+        }
+        if (bap !== "") {
+            bio += "was baptized";
+            if (exists(bap.date)) {
+                bio += dateFormat(bap.date);
+            }
+            if (exists(bap.location)) {
+                var baploc = bap.location.formatted_location;
+                if (exists(birth.location)) {
+                    var birthloc = birth.location.formatted_location;
+                    if (birthloc === baploc) {
+                        bio += " there"
+                    } else if (birthloc === baploc.replace(bap.location.place_name + ", ", "")) {
+                        bio += " in " + bap.location.place_name;
+                    } else {
+                        bio += " in " + baploc;
+                    }
+                } else {
+                    bio += " in " + baploc;
+                }
+            }
+            bio += ". ";
+        }
+        if (parents.length > 0 && parents.length < 3) {
+            var father = null;
+            var mother = null;
+            if (getGeniData(parents[0], "gender") === "male") {
+                father = parents[0];
+            } else if (getGeniData(parents[1], "gender") === "male") {
+                father = parents[1];
+            }
+            if (getGeniData(parents[0], "gender") === "female") {
+                mother = parents[0];
+            } else if (getGeniData(parents[1], "gender") === "female") {
+                mother = parents[1];
+            }
+            if (getGeniData(focus, "gender") === "male") {
+                bio += "His ";
+            } else if (getGeniData(focus, "gender") === "female") {
+                bio += "Her ";
+            } else {
+                bio += getGeniData(focus, "first_name") + "\'s ";
+            }
+            
+            if (exists(father) && exists(mother)) {
+                bio += "parents were " + buildWikiLink(father) + " and " + buildWikiLink(mother) + ". ";
+            } else if (exists(father)) {
+                bio += "father was " + buildWikiLink(father) + ". ";
+            } else if (exists(mother)) {
+                bio += "mother was " + buildWikiLink(mother) + ". ";
+            }
+        }
+
+
+        if (occupation !== "") {
+            if (getGeniData(focus, "gender") === "male") {
+                bio += "He ";
+            } else if (getGeniData(focus, "gender") === "female") {
+                bio += "She ";
+            } else {
+                bio += getGeniData(focus, "first_name") + " ";
+            }
+            bio += "was a " + occupation + ". ";
+        }
+
+        for (var i=0; i < partners.length; i++) {
+
+            bio += "\n\n" + getGeniData(focus, "first_name");
+            if (getGeniData(partners[i], "status") !== "partner") {
+                bio += " married ";
+            } else {
+                bio += " partnered with "
+            }
+            bio += buildWikiLink(partners[i]);
+            if (getGeniData(partners[i], "status") !== "partner") {
+                if (getGeniData(partners[i], "marriage", "date") !== "") {
+                    bio += dateFormat(getGeniData(partners[i], "marriage", "date"));
+                }
+                if (getGeniData(partners[i], "marriage", "location") !== "") {
+                    bio += " in " + getGeniData(partners[i], "marriage", "location")["formatted_location"];
+                }
+                if (getGeniData(partners[i], "divorce") !== "") {
+                    bio += " and they divorced"
+                    if (getGeniData(partners[i], "divorce", "date") !== "") {
+                        bio += dateFormat(getGeniData(partners[i], "divorce", "date"));
+                    }
+                    if (getGeniData(partners[i], "divorce", "location") !== "") {
+                        bio += " in " + getGeniData(partners[i], "divorce", "location")["formatted_location"];
+                    }
+                }
+            }
+            bio += ". ";
+            children = getChildren(focus, partners[i]);
+            if (children.length > 0) {
+                bio += "Together they had the following children:\n" + buildWikiLink(children[0]);
+                for (var x=1; x < children.length; x++) {
+                    bio += ";\n" + buildWikiLink(children[x]);
+                }
+                bio += ". ";
+            }
+        }
+
+        if (death !== "" || burial !== "") {
+            bio += "\n\n";
+            if (getGeniData(focus, "gender") === "male") {
+                bio += "He ";
+            } else if (getGeniData(focus, "gender") === "female") {
+                bio += "She ";
+            } else {
+                bio += getGeniData(focus, "first_name") + " ";
+            }
+        }
+
+       
+
+        if (death !== "") {
+            bio += "died";
+            if (exists(death.date)) {
+                bio += dateFormat(death.date);
+            }
+            if (exists(death.location)) {
+                bio += " in " + death.location.formatted_location;
+            }
+            if (deathcause !== "") {
+                bio += " from " + deathcause;
+            }
+            if (burial !== "") {
+                bio += " and ";
+            } else {
+                bio += ". ";
+            }
+        }
+
+        if (burial !== "") {
+            if (death === "" && deathcause !== "") {
+                bio += "died from " + deathcause + " and ";
+            }
+            bio += "was buried";
+            if (exists(burial.date)) {
+                bio += dateFormat(burial.date);
+            }
+            if (exists(burial.location)) {
+                var burloc = burial.location.formatted_location;
+                if (exists(death.location)) {
+                    var deathloc = death.location.formatted_location;
+                    if (deathloc === burloc) {
+                        bio += " there";
+                    } else if (deathloc === burloc.replace(burial.location.place_name + ", ", "")) {
+                        bio += " in " + burial.location.place_name;
+                    } else {
+                        bio += " in " + burloc;
+                    }
+                } else {
+                    bio += " in " + burloc;
+                }
+            }
+            bio += ". ";
+        }
+
+        bio += "\n----\n";
+        var copyText = document.getElementById('output');
+        copyText.value=bio;
+    }
+}
+
+function clipboardCopy() {
+    var copyText = document.getElementById('output');
+    /* Select the text field */
+    copyText.select();
+    document.execCommand("Copy");
+    $("#processing").hide();
+    $("#copyspan").fadeIn(function(){ $("#copyspan").fadeOut(4000);});
+}
+
+function buildWikiLink(person) {
+    return "[https://www.geni.com/" + getGeniData(person, "id") + " " + getGeniData(person, "name") + "]";
+}
+
+function improperSapce(name) {
+    return name.contains("  ") || name.startsWith(" ") || name.endsWith(" ");
+}
+
+function formatName(namepart) {
+    var name = namepart.replace(/&quot;/g, '"').split(" ");
+    for (var i=0; i < name.length; i++) {
+        if (name.length > 1 && compoundlast && NameParse.is_compound_lastName(name[i]) && !name[i].contains(".")) {
+            name[i] = name[i].toLowerCase();
+        } else if (name[i].startsWith('"') && name[i].endsWith('"')) {
+            name[i] = '"' + NameParse.fix_case(name[i].replace(/"/g, '')) + '"';
+        } else {
+            name[i] = NameParse.fix_case(name[i]);
+        }
+    }
+    return name.join(" ");
+}
+
+function getPronoun(gender) {
+    if (isFemale(gender)) {
+        return "her";
+    } else if (isMale(gender)) {
+        return "his";
+    } else {
+        return "their";
+    }
+}
+
+function parentName(gender) {
+    if (isFemale(gender)) {
+        return "mother";
+    } else if (isMale(gender)) {
+        return "father";
+    } else {
+        return "parent";
+    }
+}
+
+function siblingName(gender) {
+    if (isFemale(gender)) {
+        return "sister";
+    } else if (isMale(gender)) {
+        return "brother";
+    } else {
+        return "sibling";
+    }
+}
+
+function getStatus(relation, gender) {
+    if (relation === "partner") {
+        return relation;
+    } else if (relation === "mother") {
+        return "wife";
+    } else if (relation === "father") {
+        return "husband";
+    } else {
+        if (isFemale(gender)) {
+            return "wife";
+        } else if (isMale(gender)) {
+            return "husband";
+        } else {
+            return relation;
+        }
+    }
+}
+
+  </script>
+<br/><br/>
+<div class="shadoweffect-business">
+  <H1>
+Geni Biographies
+</H1>
+
+<p style="padding-top: 5px;">
+  Instructions: To generate a biography enter a Geni url or id in the box, and press "generate".
+
+</p>
+
+<br/>
+<table>
+  <tr>
+    <td colspan="3">
+Profile to generate from:
+<input type="text" id="p" placeholder="Geni url or id" style="width: 450px;">
+<br/><br/>
+</input>
+</td></tr>
+<tr><td>
+<button onClick="initializeContent()">Generate Bio</button>
+</td>
+<td style="text-align: center;"><span id="processing" style="display: none;"><img src='/static/images/processing1.gif' style='padding-left: 15px;'></span><span id="copyspan" style="font-size: small; color: green; display: none;">Copied to Clipboard</span></td>
+<td style="text-align: right;"><button onClick="clipboardCopy()">Copy to Clipboard</button></td></tr>
+<tr>
+    <td colspan="3" style="padding-top: 5px;">
+            <textarea id="output" rows="15" cols="100" value="Text will appear here.">
+                </textarea>
+    </td>
+</tr>
+</table>
+</div>
+{% end %}

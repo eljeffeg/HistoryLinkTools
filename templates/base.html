@@ -1,0 +1,153 @@
+<!doctype html>
+<html xmlns="http://www.w3.org/1999/html">
+<head>
+    <title>{% block title %}HistoryLink{% end %}</title>
+    <meta name="google-site-verification" content="ZZb_ln-Vw9D0-tulhOxzLeg4YkRGXn9sfvtDq8d_CU8" />
+    <link rel="icon" type="image/png" href="/static/favicon.ico?v=2" />
+    <link href="/static/images/apple-touch-icon.png" rel="apple-touch-icon" />
+    <link href="/static/images/apple-touch-icon-72x72.png" rel="apple-touch-icon" sizes="72x72" />
+    <link href="/static/images/apple-touch-icon-114x114.png" rel="apple-touch-icon" sizes="114x114" />
+    <link href="/static/images/apple-touch-icon-144x144.png" rel="apple-touch-icon" sizes="144x144" />
+    <link type="text/css" rel="stylesheet" href="/static/css/base.css">
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script>window.jQuery || document.write('<script src="/static/js/jquery.js"><\/script>')</script>
+    <script language="javascript" type="text/javascript">
+        if(typeof String.prototype.trim !== 'function') {
+            String.prototype.trim = function() {
+                return this.replace(/^\s+|\s+$/g, '');
+            }
+        }
+        if (!String.prototype.contains) {
+            String.prototype.contains = function () {
+                return String.prototype.indexOf.apply(this, arguments) !== -1;
+            }
+        }
+        if (!String.prototype.startsWith) {
+          String.prototype.startsWith = function(searchString, position) {
+            position = position || 0;
+            return this.lastIndexOf(searchString, position) === position;
+          };
+        }
+        function isIE () {
+          var myNav = navigator.userAgent.toLowerCase();
+          return (myNav.indexOf('msie') != -1) ? parseInt(myNav.split('msie')[1]) : 15;
+        }
+    </script>
+
+    {% block head %}{% end %}
+</head>
+<body>
+<div id="SiteContainer">
+
+    <div id="headercolumn" class="columntab">
+        <header>
+        <div id="outerheader">
+            <div class="container">
+                <h1 class="logo one-third column alpha">
+                    <a href="https://{{ request.host }}" title="HistoryLink">
+                        <img src="/static/images/HistoryLink6.png" alt="HistoryLink" class="scale-with-grid" style="padding-left: 30px; padding-top: 5px;"/>
+                        <img src="/static/images/HistoryLink5sm.png" alt="HistoryLink" class="scale-with-grid mobile-only"/>
+                    </a>
+                </h1>
+                <nav class="menu two-thirds column omega">
+
+                    <ul class="nav" style="margin-left: -2px!important;">
+                        <li><a href="https://historylinktools.herokuapp.com/history">History Search<br/><span style="color: #888">Investigate your History</span></a></li>
+                        <li><a href="https://historylinktools.herokuapp.com/graph">Ancestor Graph<br/><span style="color: #888">Visualize your Ancestry</span></a></li>
+                        <li><a href="http://gfdc.wnx.com/">Density Calculator<br/><span style="color: #888">Calculate Forest Density</span></a></li>
+                        <!--
+                        <li><a href="/graph">SmartCopy<br/><span style="color: #888">Visualize your Ancestry</span></a></li>
+                        <li><a href="/logout">Logout</a></li>
+                        -->
+                    </ul>
+                </nav>
+            </div>
+            <div class="bottom-gradient ">
+                <span class="left"></span>
+                <span class="center"></span>
+                <span class="right"></span>
+            </div>
+            </div>
+            <div class="progress3" id="projectprocessing" style="display: none; text-shadow: none; text-align: center; color: #ffffff; background-color: #4a4a4a; border-bottom: 1px solid white; box-shadow: 0 1px 0 #dddddd; padding-bottom: 2px; padding-top: 2px; padding-bottom: 4px;"></div>
+            <div class="progress1" id="statustext" style="display: none; text-shadow: none; text-align: center; color: #ffffff; background-color: #4a4a4a; border-bottom: 1px solid white; box-shadow: 0 1px 0 #dddddd; padding-bottom: 2px; padding-top: 2px; padding-bottom: 4px;"></div>
+        </header>
+    </div>
+
+    <div class="progress2" style="display: none; height: 24px;"></div>
+    <script>
+        if (isIE() > 8) {
+            document.write('<div style="padding-top: 70px;"></div>');
+        } else {
+            document.write('<center><strong>HistoryLink support for Internet Explorer ' + isIE() + ' is limited (unsupported for graph).  Please download <a href="http://www.google.com/chrome/" target="_blank">Google Chrome</a> or <a href="http://www.mozilla.org/en-US/firefox/" target="_blank">Firefox</a>.</strong></center>');
+        }
+    </script>
+
+    <noscript>
+        <div style="color:red;padding:100px;font-size:3em;">
+            You need to enable JavaScript to experience the wonder of this site!
+        </div>
+    </noscript>
+
+    <div id="page" class="columntab">
+        {% block top %}{% end %}
+        {% if error_message %}
+        <div id="error" style="margin-top: 40px; margin-bottom: -30px;"><div><center><font color="red"><h3>{{ error_message }}</h3></font></center></div></div>
+        {% end %}
+        <div id="sendmessage" style="margin-top: 20px;"></div>
+
+        <div style="margin-right: 30px;">
+            <span><br/><strong>Free <a href="https://www.geni.com/" target="_blank">Geni</a> Research Tools</strong></span>
+            <span style="float: right; margin-right: 8px; margin-top: -3px;"><strong><small><a href="https://www.geni.com/projects/HistoryLink/14021" target="_blank">Follow Project</a> <span style="color:#0645AD;">&nbsp;&bull;&nbsp;</span> <a href="https://www.geni.com/discussions?discussion_type=project-14021" target="_blank">Discussion</a> <span style="color:#0645AD;">&nbsp;&bull;&nbsp;</span>
+                <span><form style="display:inline; padding-top: 12px; vertical-align: middle;" action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_blank">
+                    <input type="hidden" name="cmd" value="_s-xclick">
+                    <input type="hidden" name="encrypted" value="-----BEGIN PKCS7-----MIIHLwYJKoZIhvcNAQcEoIIHIDCCBxwCAQExggEwMIIBLAIBADCBlDCBjjELMAkGA1UEBhMCVVMxCzAJBgNVBAgTAkNBMRYwFAYDVQQHEw1Nb3VudGFpbiBWaWV3MRQwEgYDVQQKEwtQYXlQYWwgSW5jLjETMBEGA1UECxQKbGl2ZV9jZXJ0czERMA8GA1UEAxQIbGl2ZV9hcGkxHDAaBgkqhkiG9w0BCQEWDXJlQHBheXBhbC5jb20CAQAwDQYJKoZIhvcNAQEBBQAEgYAMaOO8xRo8AJaD+x8BZHS1BBlcUcg42I7MdC+SNTTb0n4oC69tlpTIc30nL8JuV5UE2ERfhQAkJG6+xXK8Vwthgwq4Fm3DdhCEe/9z26K5lRmJ61Uexzk7DIhMxycj+dPDN1BxqDYYgUi3MgxHGGNZ6XyHvv42kSHnTTzYGE1BkjELMAkGBSsOAwIaBQAwgawGCSqGSIb3DQEHATAUBggqhkiG9w0DBwQIyLST5gtvheKAgYiutK7VbqS6ErgPp7TYrloqH414+32oPY7Y4vRiOB5Zdc9hoC1gdO35412jTEVYigNIdx2muC0dkLBkOJ468oDR9HlTXhQZEmNeG26PzqudtkNURSDQLGa/BuEhiVB4B/uTPQ58Z5XtZceBO2GWxuxETimGYccDS9e+/A49HBSKtrLcIodW+W1OoIIDhzCCA4MwggLsoAMCAQICAQAwDQYJKoZIhvcNAQEFBQAwgY4xCzAJBgNVBAYTAlVTMQswCQYDVQQIEwJDQTEWMBQGA1UEBxMNTW91bnRhaW4gVmlldzEUMBIGA1UEChMLUGF5UGFsIEluYy4xEzARBgNVBAsUCmxpdmVfY2VydHMxETAPBgNVBAMUCGxpdmVfYXBpMRwwGgYJKoZIhvcNAQkBFg1yZUBwYXlwYWwuY29tMB4XDTA0MDIxMzEwMTMxNVoXDTM1MDIxMzEwMTMxNVowgY4xCzAJBgNVBAYTAlVTMQswCQYDVQQIEwJDQTEWMBQGA1UEBxMNTW91bnRhaW4gVmlldzEUMBIGA1UEChMLUGF5UGFsIEluYy4xEzARBgNVBAsUCmxpdmVfY2VydHMxETAPBgNVBAMUCGxpdmVfYXBpMRwwGgYJKoZIhvcNAQkBFg1yZUBwYXlwYWwuY29tMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDBR07d/ETMS1ycjtkpkvjXZe9k+6CieLuLsPumsJ7QC1odNz3sJiCbs2wC0nLE0uLGaEtXynIgRqIddYCHx88pb5HTXv4SZeuv0Rqq4+axW9PLAAATU8w04qqjaSXgbGLP3NmohqM6bV9kZZwZLR/klDaQGo1u9uDb9lr4Yn+rBQIDAQABo4HuMIHrMB0GA1UdDgQWBBSWn3y7xm8XvVk/UtcKG+wQ1mSUazCBuwYDVR0jBIGzMIGwgBSWn3y7xm8XvVk/UtcKG+wQ1mSUa6GBlKSBkTCBjjELMAkGA1UEBhMCVVMxCzAJBgNVBAgTAkNBMRYwFAYDVQQHEw1Nb3VudGFpbiBWaWV3MRQwEgYDVQQKEwtQYXlQYWwgSW5jLjETMBEGA1UECxQKbGl2ZV9jZXJ0czERMA8GA1UEAxQIbGl2ZV9hcGkxHDAaBgkqhkiG9w0BCQEWDXJlQHBheXBhbC5jb22CAQAwDAYDVR0TBAUwAwEB/zANBgkqhkiG9w0BAQUFAAOBgQCBXzpWmoBa5e9fo6ujionW1hUhPkOBakTr3YCDjbYfvJEiv/2P+IobhOGJr85+XHhN0v4gUkEDI8r2/rNk1m0GA8HKddvTjyGw/XqXa+LSTlDYkqI8OwR8GEYj4efEtcRpRYBxV8KxAW93YDWzFGvruKnnLbDAF6VR5w/cCMn5hzGCAZowggGWAgEBMIGUMIGOMQswCQYDVQQGEwJVUzELMAkGA1UECBMCQ0ExFjAUBgNVBAcTDU1vdW50YWluIFZpZXcxFDASBgNVBAoTC1BheVBhbCBJbmMuMRMwEQYDVQQLFApsaXZlX2NlcnRzMREwDwYDVQQDFAhsaXZlX2FwaTEcMBoGCSqGSIb3DQEJARYNcmVAcGF5cGFsLmNvbQIBADAJBgUrDgMCGgUAoF0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTYwMjA4MDIwOTU3WjAjBgkqhkiG9w0BCQQxFgQUvYT6vgGgwT+jpKzoKs/ItW4a7T4wDQYJKoZIhvcNAQEBBQAEgYA/OCj20SiO5qqcCAGanHkhpVR877lVu5DHvCtEj2Ao/zWPI88jj+LG/aCAKXCeVshkCXBLJnfC+TvHbHsAA6XcN3iB/lV0LAu9yTn5pEABEbvrTXlKE37wqntwqVt+yF6k1JYM7/25RT4VAjDxv4dAeaq7lpY63907tMNayPkaPg==-----END PKCS7-----">
+                    <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">
+                    <!--
+                    <input style="color:#0645AD; cursor: pointer; background-color: rgba(0,0,0,0); border: none; width: 50px;font-size: x-small;" value="Donate" onclick="this.form.submit()">
+                    -->
+                    <img alt="" border="0" src="https://www.paypalobjects.com/en_US/i/scr/pixel.gif" width="1" height="1">
+                </form></span>
+            </small></strong></span>
+            {% block body %}{% end %}
+        </div>
+
+
+
+    </div>
+
+    {% block bottom %}{% end %}
+    <div id="copyright" class="columntab">
+        <div class="terms" style="margin-right: 35px;"><br/>
+            <table style="width:100%;"><tr><td style="width:205px;">
+                <div style='width:200px;text-align:center'><iframe src='https://www.geni.com/trends/world_tree_badge' width='200' height='55' scrolling='no' frameborder='0'></iframe><div style='font-family:Arial,Helvetica,sans-serif;font-size:10px'>Join the world's largest <a href='https://www.geni.com'>family tree</a></div></div></td>
+            <td style="text-align: right; vertical-align: text-top;">
+                <font size="2"><strong>Disclaimer: HistoryLink uses the Geni API but is not endorsed, operated, or sponsored by Geni, Inc.</strong></font>
+                <br/><br/>
+                <a href="/privacy">Privacy Policy</a> |
+                <a href="https://www.geni.com/company/terms_of_use">Terms of Use</a> |
+                {% if current_user %}<a href="/logout">Logout</a>{% else %}<a href="/login">Login</a>{% end %}
+            </td></tr></table>
+        </div>
+    </div>
+</div>
+<script language="javascript" type="text/javascript">
+    var canvas = window.top.document.getElementById("app_content_frame");
+    if (canvas != null) {
+        canvas.style.height = document.getElementById("SiteContainer").offsetHeight + "px";
+    }
+</script>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-44683726-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+</body>
+</html>

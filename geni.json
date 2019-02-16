@@ -1,0 +1,175 @@
+{
+  "focus": {
+    "claimed": true,
+    "creator": "https://www.geni.com/api/user-12501013",
+    "first_name": "Api",
+    "gender": "male",
+    "guid": "6000000024491145741",
+    "id": "profile-34655101643",
+    "is_alive": true,
+    "last_name": "Tester",
+    "name": "Api Tester",
+    "public": false,
+    "url": "https://www.geni.com/api/profile-34655101643"
+  },
+  "nodes": {
+    "profile-34655101643": {
+      "edges": {
+        "union-55425935": {
+          "rel": "child"
+        },
+        "union-55425959": {
+          "rel": "partner"
+        }
+      },
+      "first_name": "Api",
+      "gender": "male",
+      "id": "profile-34655101643",
+      "is_alive": true,
+      "last_name": "Tester",
+      "public": false,
+      "url": "https://www.geni.com/api/profile-34655101643"
+    },
+    "profile-34655101661": {
+      "edges": {
+        "union-55425935": {
+          "rel": "partner"
+        }
+      },
+      "first_name": "Father",
+      "gender": "male",
+      "id": "profile-34655101661",
+      "is_alive": true,
+      "last_name": "Tester",
+      "public": false,
+      "url": "https://www.geni.com/api/profile-34655101661"
+    },
+    "profile-34655101675": {
+      "edges": {
+        "union-55425935": {
+          "rel": "partner"
+        }
+      },
+      "first_name": "Mother",
+      "gender": "female",
+      "id": "profile-34655101675",
+      "is_alive": true,
+      "last_name": "Tester",
+      "public": false,
+      "url": "https://www.geni.com/api/profile-34655101675"
+    },
+    "profile-34655101723": {
+      "edges": {
+        "union-55425959": {
+          "rel": "child"
+        }
+      },
+      "first_name": "Daughter",
+      "gender": "female",
+      "id": "profile-34655101723",
+      "is_alive": true,
+      "last_name": "Tester",
+      "public": false,
+      "url": "https://www.geni.com/api/profile-34655101723"
+    },
+    "profile-34655101724": {
+      "edges": {
+        "union-55425959": {
+          "rel": "partner"
+        }
+      },
+      "first_name": "Wife",
+      "gender": "female",
+      "id": "profile-34655101724",
+      "is_alive": true,
+      "last_name": "Tester",
+      "public": false,
+      "url": "https://www.geni.com/api/profile-34655101724"
+    },
+    "profile-34655101725": {
+      "edges": {
+        "union-55425959": {
+          "rel": "child"
+        }
+      },
+      "first_name": "Son",
+      "gender": "male",
+      "id": "profile-34655101725",
+      "is_alive": true,
+      "last_name": "Tester",
+      "public": false,
+      "url": "https://www.geni.com/api/profile-34655101725"
+    },
+    "profile-34655101726": {
+      "edges": {
+        "union-55425935": {
+          "rel": "child"
+        }
+      },
+      "first_name": "Brother",
+      "gender": "male",
+      "id": "profile-34655101726",
+      "is_alive": true,
+      "last_name": "Tester",
+      "public": false,
+      "url": "https://www.geni.com/api/profile-34655101726"
+    },
+    "profile-34655101727": {
+      "edges": {
+        "union-55425935": {
+          "rel": "child"
+        }
+      },
+      "first_name": "Sister",
+      "gender": "female",
+      "id": "profile-34655101727",
+      "is_alive": true,
+      "last_name": "Tester",
+      "public": false,
+      "url": "https://www.geni.com/api/profile-34655101727"
+    },
+    "union-55425935": {
+      "edges": {
+        "profile-34655101643": {
+          "rel": "child"
+        },
+        "profile-34655101661": {
+          "rel": "partner"
+        },
+        "profile-34655101675": {
+          "rel": "partner"
+        },
+        "profile-34655101726": {
+          "rel": "child"
+        },
+        "profile-34655101727": {
+          "rel": "child"
+        }
+      },
+      "status": "spouse",
+      "url": "https://www.geni.com/api/union-55425935"
+    },
+    "union-55425959": {
+      "edges": {
+        "profile-34655101643": {
+          "rel": "partner"
+        },
+        "profile-34655101723": {
+          "rel": "child"
+        },
+        "profile-34655101724": {
+          "rel": "partner"
+        },
+        "profile-34655101725": {
+          "rel": "child"
+        }
+      },
+      "status": "spouse",
+      "url": "https://www.geni.com/api/union-55425959"
+    }
+  }
+}
+<li>Albert Joseph George Lacourse<ul class="tree"><li>Eugène Lacourse<ul class="tree"><li>Joseph Gélinas Lacourse<ul class="tree"><li>Jean Baptise Lacourse dit Gélinas<ul class="tree"><li>Jean-Baptiste Gélinas dit Lacourse<ul class="tree"><li>Pierre Gélinas Dit Lacource</li><li class="last">Madeleine Bourbeau</li></ul></li><li class="last">Josephe Francoise Gélinas dit Lacourse (Vacher-Lacerte)<ul class="tree"><li>Jean-Charles Vacher dit Lacerte</li><li class="last">Marie-Claire Bergeron</li></ul></li></ul></li><li class="last">Marguerite Héroux<ul class="tree"><li>Joseph Jacques Héroux<ul class="tree"><li>Jacques Héroux dit Bourguinville</li><li class="last">Marie Elizabeth (Ely's) Grenier</li></ul></li><li class="last">Marie-Josephte Sylvestre<ul class="tree"><li>François Sylvestre dit Champagne</li><li class="last">Marie-Anne Noël</li></ul></li></ul></li></ul></li><li class="last">Marie Marguerite Lacourse (Croisetière)<ul class="tree"><li>François Xavier Croisetière<ul class="tree"><li>Étienne Claude Croisetière<ul class="tree"><li>Claude Croisetière</li><li class="last">Jeanne-Angelique Prevost</li></ul></li><li class="last">Marie-Josephte Héroux<ul class="tree"><li>Jacques Héroux dit Bourguinville</li><li class="last">Marie Elizabeth (Ely's) Grenier</li></ul></li></ul></li><li class="last">Marie-Geneviève Croisetière (Brûlé)<ul class="tree"><li>Joseph-Charles Brûlé dit Leclerc<ul class="tree"><li>Joseph Brûlé dit Leclerc</li><li class="last">Marie-Anne Sylvestre</li></ul></li><li class="last">Marie-Anne Lorendeau<ul class="tree"><li>Joseph Rolandeau (Laurendeau)</li><li class="last">Marie-Marguerite Gagnon</li></ul></li></ul></li></ul></li></ul></li><li class="last">Geneviève Lacourse (St-George dit Laporte)<ul class="tree"><li>Pierre St-George dit Laporte<ul class="tree"><li>Pierre Sulplice St-George dit Laporte<ul class="tree"><li>Pierre Sulpice St-George dit Laporte (Laporte)<ul class="tree"><li>Pierre Sulpice Laporte St-George</li><li class="last">Marie-Angélique Charbonneau</li></ul></li><li class="last">Marie-Félicité Madeleine Delomé (Denommé)<ul class="tree"><li>Pierre Delomé (Delaumay)</li><li class="last">Marie-Josèphe Martineau dite St-Onge</li></ul></li></ul></li><li class="last">Mary Ann St-George dit Laporte (Piatté)<ul class="tree"><li>Jean Baptiste Piatté<ul class="tree"><li>Jean Baptiste Piatté</li><li class="last">Marguerite Guilbault</li></ul></li><li class="last">Thérèse Beaugrand-Champagne<ul class="tree"><li>Pierre Alexis Beaugrand Champagne</li><li class="last">Marie-Anne Henault dite Fresniere</li></ul></li></ul></li></ul></li><li class="last">Geneviève St-George (Coutu)<ul class="tree"><li>Francios Coutu<ul class="tree"><li>Francois Xavier Coutu<ul class="tree"><li>Étienne Coutu de Lavaltrie</li><li class="last">Marie-Thérèse Brien</li></ul></li><li class="last">Marie Plouffe<ul class="tree"><li>Louis Plouffe</li><li class="last">Marie-Angélique Riel</li></ul></li></ul></li><li class="last">Angélique Laprade<ul class="tree"><li>Jean-Baptiste Rejas Laprade<ul class="tree"><li>Jacques Régéas dit Laprade</li><li class="last">Marie-Agathe Mandeville</li></ul></li><li class="last">Angélique Laprade (Charpentier)<ul class="tree"><li>Augustin Charpentier</li><li class="last">Marie Josephte Geneviève Courtin Sanschagrin</li></ul></li></ul></li></ul></li></ul></li></ul></li></div>
+
+
+{"name":"Jeff Gentes","mp":0,"pb":0,"cl":1,"pc":0,"ad":0,"id":"profile-16675621","bd":"1974-09-26","dd":"","bl":"Milford, Massachusetts, United States","dl":"","gp":"","ct":"1","st":"1","cd":"0","sd":"0","gd":"2","lv":"1","children":[{"name":"Rena McDonald (Landry)","mp":0,"pb":0,"cl":1,"pc":0,"ad":0,"id":"profile-16675668","bd":"1953-03-24","dd":"","bl":"Milford, MA, US","dl":"","gp":"","ct":"1","st":"1","cd":"0","sd":"0","gd":"1","lv":"1","children":[{"name":"Clifford W. Landry","mp":0,"pb":0,"cl":1,"pc":0,"ad":0,"id":"profile-16676064","bd":"1933-06-11","bl":"Franklin, MA, USA","dd":"","dl":"","gp":"","ct":"1","st":"1","cd":"0","sd":"0","gd":"2","lv":"1","depth":2,"value":50,"x":0,"y":0.6666666666666666,"dx":0.25,"dy":0.3333333333333333},{"name":"June M Landry","mp":0,"pb":0,"cl":0,"pc":0,"ad":0,"id":"profile-16676058","bd":"1934-05-03","bl":"Franklin, Massachusetts, US","dd":"","dl":"","gp":"","ct":"1","st":"1","cd":"0","sd":"0","gd":"1","lv":"1","depth":2,"value":50,"x":0.25,"y":0.6666666666666666,"dx":0.25,"dy":0.3333333333333333}],"depth":1,"value":100,"x":0,"y":0.3333333333333333,"dx":0.5,"dy":0.3333333333333333},{"name":"Roland Ernest Gentes","mp":0,"pb":0,"cl":1,"pc":0,"ad":0,"id":"profile-16675592","bd":"1951-06-29","dd":"","bl":"Woonsocket, Rhode Island, United States","dl":"","gp":"","ct":"1","st":"2","cd":"0","sd":"0","gd":"2","lv":"1","children":[{"name":"Normand Gentes","mp":0,"pb":1,"cl":0,"pc":0,"ad":0,"id":"profile-16676544","bd":"1930-04-20","bl":"Woonsocket, Rhode Island, US","dd":"1987-07-21","dl":"Bellingham, Massachusetts, United States","gp":"","ct":"1","st":"2","cd":"1","sd":"1","gd":"2","lv":"0","depth":2,"value":50,"x":0.5,"y":0.6666666666666666,"dx":0.25,"dy":0.3333333333333333},{"name":"Rolande F. Gentes (Hogue)","mp":0,"pb":0,"cl":0,"pc":0,"ad":0,"id":"profile-16676511","bd":"1928-10-05","bl":"Woonsocket, Rhode Island, US","dd":"","dl":"","gp":"","ct":"1","st":"2","cd":"0","sd":"0","gd":"1","lv":"1","depth":2,"value":50,"x":0.75,"y":0.6666666666666666,"dx":0.25,"dy":0.3333333333333333}],"depth":1,"value":100,"x":0.5,"y":0.3333333333333333,"dx":0.5,"dy":0.3333333333333333}],"depth":0,"value":200,"x":0,"y":0,"dx":1,"dy":0.3333333333333333}

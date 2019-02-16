@@ -1,0 +1,26 @@
+{% if error %}
+    document.location.reload(true);
+{% else %}
+    var run = {{status}};
+    var count = {{count}};
+    var displaycount = {{count+1}};
+    if (displaycount > document.getElementById("genlimit").value) {
+            displaycount = count;
+    }
+
+    if (count > matchcount) {
+        matchcount = count;
+        updateGraph();
+    }
+
+    document.getElementById("statustext").innerHTML = "Researching:&nbsp;&nbsp;Generation " + displaycount + " <img src='/static/images/processing1.gif' style='padding-left: 15px;'><img src='/static/images/stop.png' style='padding-left: 10px; padding-right: 10px; vertical-align: bottom; cursor:pointer;' title='stop' alt='stop' onclick='stopGraph()'>";
+
+    if (run == 2 && running == true) {
+        alert("There was a problem getting data from Geni.  Please try again later.");
+        run = 0;
+    }
+    if (run == 0 && running == true) {
+        stopGraph();
+    }
+{% end %}
+

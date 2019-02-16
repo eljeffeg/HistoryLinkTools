@@ -1,0 +1,66 @@
+{% if count > 0 %}
+<strong>Summary</strong>
+<hr/>
+<table width="100%"><tr>
+    <td style="text-align: left;">Total Profiles ({{count}})</td>
+    <td style="text-align: center;">Total Matches ({{matchcount}})</td>
+    <td style="text-align: right;">Master Profiles ({{mpcount}})</td>
+    </tr><tr>
+    <td style="text-align: left;">Pending Merges ({{pending}})</td>
+    <td style="text-align: center;">Parent Conflicts ({{pconflict}})</td>
+    <td style="text-align: right;">Access Problems ({{problems}})</td>
+    </td>
+</tr></table>
+{% end %}
+
+{%if parentcount %}
+        <hr/>
+         <br/>
+
+{% import math %}
+    <table width="100%"><tr>
+    <td style="margin-left: 1px; float: left;"><strong>Tree Completeness</strong></td>
+    <td style="margin-right: 3px; float: right;">
+        <strong><span id="hitnote">Direct Ancestors</span></strong>
+    </td>
+    </tr>
+    </table>
+
+    <div class="separator"></div>
+    <table width="100%">
+        <tr>
+                    <td></td>
+                    <td style="width: 33%; text-align: center; padding-bottom: 5px;" colspan="2"><strong>Total Per Gen</strong></td>
+                    <td style="width: 53%; text-align: center; padding-bottom: 5px;" colspan="2"><strong>Total All Gen</strong></td>
+                    <td style="width: 14%; text-align: center; padding-bottom: 5px;" colspan="2"><strong>MP Per Gen</strong></td>
+        </tr>
+    {% set total = 2 %}
+    {% set addcount = 0 %}
+    {% set addmcount = 0 %}
+    {% for idx,item in enumerate(parentcount) %}
+
+        {% if gen > idx %}
+            {% set pcount = min(parentcount[str(idx)]["count"], total) %}
+            {% set mcount = min(parentcount[str(idx)]["mpcount"], pcount) %}
+            {% if pcount > 0 %}
+                {% set addcount += pcount %}
+                {% set alltotal = (total*2)-2 %}
+                {% set percent = int(round((float(pcount)/float(total)) * 100)) %}
+                {% set mpercent = int(round((float(mcount)/float(pcount)) * 100)) %}
+                {% set totalval = int(round(float(addcount) / float(alltotal) * 100))  %}
+
+                <tr>
+                    <td style="white-space: nowrap;">{{parentcount[str(idx)]["label"]}}</td>
+                    <td style="white-space: nowrap; text-align: center; padding-left: 15px; padding-right: 10px;">{{pcount}} / {{total}}</td>
+                    <td style="width: 33%; border: 1px solid #767676;"><div class="graphbar" style="width:{{percent}}%; height: 100%;">&nbsp;{{percent}}%</div></td>
+                    <td style="white-space: nowrap; text-align: center; padding-left: 8px; padding-right: 9px;">{{addcount}} / {{alltotal}}</td>
+                    <td style="width: 53%; border: 1px solid #767676;"><div class="graphbarblue" style="width:{{totalval}}%; height: 100%;">&nbsp;{{totalval}}%</div></td>
+                    <td style="white-space: nowrap; text-align: center; padding-left: 8px; padding-right: 9px;">{{mcount}} / {{pcount}}</td>
+                    <td style="width: 14%; border: 1px solid #767676;"><div class="graphbarorange" style="width:{{mpercent}}%; height: 100%;">&nbsp;{{mpercent}}%</div></td>
+                </tr>
+                {% set total = 2 * total %}
+            {% end %}
+        {% end %}
+    {%end%}
+    </table>
+{%end%}

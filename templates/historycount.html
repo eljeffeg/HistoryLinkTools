@@ -1,0 +1,27 @@
+{% if error %}
+    document.location.reload(true);
+{% else %}
+    var run = {{status}};
+    var hits = {{hits}};
+    var matchterm = " Matches";
+    var researchterm = "Researching";
+    if (matchcount < {{match}}) {
+        matchcount = {{match}};
+    }
+    if (matchcount == 1) {
+        matchterm = " Match";
+    }
+    if (run == 0) {
+        researchterm = "Researched";
+    }
+
+    document.getElementById("statustext").innerHTML = "" + researchterm + ":&nbsp;&nbsp;{{stage}}&nbsp;&nbsp;({{count}} Profiles Searched&nbsp;&ndash;&nbsp;" + matchcount + matchterm + ")<img src='/static/images/processing1.gif' style='padding-left: 15px;'><img src='/static/images/stop.png' style='padding-left: 10px; padding-right: 10px; vertical-align: bottom; cursor:pointer;' title='stop' alt='stop' onclick='stopHistory()'>";
+    updateCompleteness();
+
+    if (hits != 0 && {{match}} > 0) {
+        updateHistory();
+    }
+    if (run == 0) {
+        stopHistory();
+    }
+{% end %}

@@ -1,0 +1,319 @@
+<!doctype html>
+<html xmlns="http://www.w3.org/1999/html">
+<head>
+    <link type="text/css" rel="stylesheet" href="/static/css/base.css">
+    <link href="/static/images/apple-touch-icon2.png" rel="apple-touch-icon" />
+    <link href="/static/images/apple-touch-icon2-72x72.png" rel="apple-touch-icon" sizes="72x72" />
+    <link href="/static/images/apple-touch-icon2-114x114.png" rel="apple-touch-icon" sizes="114x114" />
+    <link href="/static/images/apple-touch-icon2-144x144.png" rel="apple-touch-icon" sizes="144x144" />
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script>window.jQuery || document.write('<script src="/static/js/jquery.js"><\/script>')</script>
+    <script language="javascript" type="text/javascript">
+        if(typeof String.prototype.trim !== 'function') {
+            String.prototype.trim = function() {
+                return this.replace(/^\s+|\s+$/g, '');
+            }
+        }
+    </script>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript">
+        var chart, options, data;
+        var firstrun = true;
+        var curatorstatstr = "[{{curatorstats}}]";
+        curatorstatstr = curatorstatstr.replace(/&#39;/g,"'");
+        google.load("visualization", "1", {packages:["corechart"]});
+        google.setOnLoadCallback(drawChart);
+        function drawChart() {
+            data = google.visualization.arrayToDataTable(eval(curatorstatstr));
+            chart = new google.visualization.AreaChart(document.getElementById('chart_div'));
+
+        }
+        function changeTime(timeframe, total) {
+            slide1 = document.getElementById("slide1").style.display;
+            slide2 = document.getElementById("slide2").style.display;
+            if (slide1 == "block") {
+                page = 1;
+            } else if (slide2 == "block") {
+                page = 2;
+            } else {
+                page = 3;
+            }
+            totalval = "";
+            if (total) {
+                totalval = "&totals=true";
+            }
+            url = "/leaderboard?timeframe=" + timeframe + "&page=" + page + totalval;
+            document.location.href = url;
+        }
+        function toggleGraph() {
+            $('.chart_div_class').slideToggle();
+            resize ();
+        }
+        function slideLeft() {
+            slide1 = document.getElementById("slide1").style.display;
+            slide2 = document.getElementById("slide2").style.display;
+            if (slide1 == "block") {
+                document.getElementById("slide1").style.display = "none";
+                document.getElementById("slide2").style.display = "none";
+                document.getElementById("slide3").style.display = "block";
+            } else if (slide2 == "block") {
+                document.getElementById("slide1").style.display = "block";
+                document.getElementById("slide2").style.display = "none";
+                document.getElementById("slide3").style.display = "none";
+            } else {
+                document.getElementById("slide1").style.display = "none";
+                document.getElementById("slide2").style.display = "block";
+                document.getElementById("slide3").style.display = "none";
+            }
+        }
+        function slideRight() {
+            slide1 = document.getElementById("slide1").style.display;
+            slide2 = document.getElementById("slide2").style.display;
+            if (slide1 == "block") {
+                document.getElementById("slide1").style.display = "none";
+                document.getElementById("slide2").style.display = "block";
+                document.getElementById("slide3").style.display = "none";
+            } else if (slide2 == "block") {
+                document.getElementById("slide1").style.display = "none";
+                document.getElementById("slide2").style.display = "none";
+                document.getElementById("slide3").style.display = "block";
+            } else {
+                document.getElementById("slide1").style.display = "block";
+                document.getElementById("slide2").style.display = "none";
+                document.getElementById("slide3").style.display = "none";
+            }
+        }
+        function resize () {
+
+            var gwidth = document.getElementById("chart_div").offsetWidth;
+
+            if (document.getElementById("chart_div").style.display != "none") {
+                options = {
+                    height: 350,
+                    width: gwidth,
+                    title: 'Curator Overview Statistics',
+                    backgroundColor: {fill: 'transparent'},
+                    legend: {position: 'top'},
+                    hAxis: {title: '',  titleTextStyle: {color: 'black'}},
+                    chartArea: {bottom:150, height: 200, width: gwidth-100, left: 80, right: 20}
+                };
+                chart.draw(data, options);
+            }
+        }
+        window.onresize = resize;
+    </script>
+    <style>
+        body
+        {
+            background-color: #000000;
+            background-image:url('/static/images/mage.jpg');
+            background-repeat:no-repeat;
+            background-attachment:fixed;
+            background-position:center top;
+        }
+    </style>
+</head>
+<body>
+
+<center>
+    <div id="shadowtitle" style="width: 100%; height: 0px;"></div>
+    <div style="margin-left: -18px; width: 955px;">
+        <table>
+            <tr>
+                <td colspan='3'>
+                    <div class="shadoweffect" id="shadowtitle2" style="padding-bottom: 5px; margin-top: 15px; margin-bottom: 10px; background-color: rgba(255, 255, 255, 0.8);">
+                        <div style="text-align: center;"></div>
+                        <table width="100%">
+                            <tr>
+                                <td style="text-align: left; padding-left: 10px; padding-top: 10px; vertical-align: middle; padding-bottom: 2px; text-shadow:1px 1px 1px #727272;"><h1><img src="/static/images/CuratorShield.png" align="left" style="padding-bottom:0px;padding-top: 0px; margin-top: -10px; margin-bottom: -5px;">urator Leaderboard</h1></td>
+                                <td style=" vertical-align: top; text-align: right; padding-right: 10px;"><strong>Last Updated: </strong>{{updatetime[0]["updatetime"]}}<div style="padding-top: 3px; margin-bottom: -2px;"><a href="javascript:void(0);" onclick="toggleGraph();" style="color: black; text-decoration:none;"><strong>Monthly Overview Chart</strong><img src="/static/images/arrow_down.png" align="right" style="padding-left: 3px; padding-top: 2px;"></a></div></td></tr>
+                        </table>
+                        <div class="chart_div_class" style=" display: none;" >
+                            <div id="chart_div" style="display: block; height: 350px; margin-left: 5px; margin-right: 5px;"></div>
+                            <div id="control_div" style="margin-left: 50px; margin-bottom: 15px; margin-right: 30px; font-weight: bold;"><u>Notes</u>: In March 2013, we see a big spike in merges and an increase in updates and tree building from the introduction of curator superpowers. The bump in Sept 2014 in tree building, documents, and updates was from SmartCopy, and the merge surge of Dec 2014-Jan 2015 is from the World Family Tree Queue.  The continued growth thereafter is in line with the addition of new curators.</div>
+                        </div>
+                    </div>
+                </td></tr>
+            <tr><td colspan='3'>
+                <div class="shadoweffect" style="margin-bottom: 10px; padding-bottom: 5px; background-color: rgba(255, 255, 255, 0.8);">
+                    <table width="100%"><tr>
+                        <td style="text-align: left; padding-left: 10px; width: 100px; padding-top: 3px;">
+                            {% if totals %}
+                            <a href="javascript:void(0);" onclick="changeTime('{{timeframe}}', false);" style="color: black; text-decoration:none;"><img src="/static/images/arrow_left.png" style="cursor: pointer; padding-bottom: 0px; margin-bottom: -4px; margin-top:-3px;" align="left"><strong>{{timeframe}}</strong></a>
+                            {% elif backframe %}
+                            <a href="javascript:void(0);" onclick="changeTime('{{backframe}}', false);" style="color: black; text-decoration:none;"><img src="/static/images/arrow_left.png" style="cursor: pointer; padding-bottom: 0px; margin-bottom: -4px; margin-top:-3px;" align="left"><strong>{{backframe}}</strong></a>
+                            {%end%}</td>
+                        <td style="text-align: center;"><div id="monthlystats"><h4><strong>{% if totals %}Curator Total Stats (since 2012-03){%else%}Curator Monthly Stats ({{timeframe}}){%end%}</strong></h4>{{mergecount}} Merges&nbsp;&nbsp;&bull;&nbsp;&nbsp;{{updatecount}} Updates&nbsp;&nbsp;&bull;&nbsp;&nbsp;{{addcount}} Tree Building&nbsp;&nbsp;&bull;&nbsp;&nbsp;{{doccount}} Documentation&nbsp;&nbsp;&bull;&nbsp;&nbsp;{{projectcount}} Projects</div></td>
+                        <td style="text-align: right; padding-right: 10px; width: 100px; padding-top: 3px;">
+                            {% if totals %}
+                            {% elif nextframe %}
+                            <a href="javascript:void(0);" onclick="changeTime('{{nextframe}}', false);" style="color: black; text-decoration:none;"><strong>{{nextframe}}</strong><img src="/static/images/arrow_right.png" style="cursor: pointer; padding-bottom: 0px; margin-bottom: -4px; margin-top:-3px;" align="right"></a>
+                            {%else%}
+                            <a href="javascript:void(0);" onclick="changeTime('{{timeframe}}', true);" style="color: black; text-decoration:none;"><strong>Total</strong><img src="/static/images/arrow_right.png" style="cursor: pointer; padding-bottom: 0px; margin-bottom: -4px; margin-top:-3px;" align="right"></a>
+                            {%end%}</td>
+                    </tr></table>
+                </div>
+            </td>
+            </tr>
+            <tr id="slide1" style="display: {%if page == 1%}block{%else%}none{%end%};">
+                <td style="vertical-align: top; width: 400px;">
+                    <div class="shadoweffect" style="text-align: center; margin-bottom: 10px; padding-bottom: 10px; background-color: rgba(255, 255, 255, 0.8);">
+                        <a href="javascript:void(0);" onclick="slideLeft();" style="color: black; text-decoration:none;"><img src="/static/images/arrow_left.png" align="left" style="padding-left: 10px; maring-top: -1px; margin-right: -36px;"></a><h1>Merges</h1></div>
+                    <div class="shadoweffect" style="padding-bottom: 2px; background-color: rgba(255, 255, 255, 0.75);">
+                        <table width="400">
+                            <tr><td style='padding-bottom: 5px;'><h3>Rank</h3></td>
+                                <td align='center' colspan='2' style='padding-bottom: 5px;'><h3>Curator</h3></td>
+                                <td style="padding-left: 30px; padding-right: 10px; padding-bottom: 5px;"><h3>Count</h3></td></tr>
+                            <tr><td colspan='4'><div style="border-top: 1px solid darkgray; padding-bottom: 5px;"></div></td></tr>
+                            {% for idx,entry in enumerate(mergeleaders) %}
+                            <tr><td style="padding-right: 20px; padding-left: 10px;"><h2>{{idx+1}}</h2></td><td style="vertical-align: middle;">
+                                <a href='https://www.geni.com/{{entry["id"]}}' target='_blank'><img src='{{entry["mug"]}}' style='border: 1px black; width: 40px;'></a></td>
+                                <td  width="200px" style="padding-left: 10px;"><a href='https://www.geni.com/{{entry["id"]}}' target='_blank'><h3>{{entry["name"]}}</h3></a></td>
+                                <td style="padding-left: 30px; padding-right: 10px;"><h2>{{entry["merges"]}}</h2></td>
+                            </tr>
+                            {% if idx != len(mergeleaders)-1 %}
+                            <tr><td colspan='4'><div style="border-top: 1px solid darkgray; padding-bottom: 5px;"></div></td></tr>
+                            {% end %}
+                            {% end %}
+                        </table>
+                    </div>
+
+                </td>
+                <td width="155px"></td>
+                <td style="vertical-align: top; width: 400px;">
+                    <div class="shadoweffect" style="text-align: center; margin-bottom: 10px; padding-bottom: 10px; background-color: rgba(255, 255, 255, 0.8);">
+                        <a href="javascript:void(0);" onclick="slideRight();" style="color: black; text-decoration:none;"><img src="/static/images/arrow_right.png" align="right" style="padding-right: 10px; margin-top: -1px; margin-left: -36px;"></a><h1>Updates</h1></div>
+                    <div class="shadoweffect" style="padding-bottom: 2px; background-color: rgba(255, 255, 255, 0.75);">
+                        <table width="400">
+                            <tr><td style='padding-bottom: 5px;'><h3>Rank</h3></td>
+                                <td align='center' colspan='2' style='padding-bottom: 5px;'><h3>Curator</h3></td>
+                                <td style="padding-left: 30px; padding-right: 10px; padding-bottom: 5px;"><h3>Count</h3></td></tr>
+                            <tr><td colspan='4'><div style="border-top: 1px solid darkgray; padding-bottom: 5px;"></div></td></tr>
+                            {% for idx,entry in enumerate(updateleaders) %}
+                            <tr><td style="padding-right: 20px; padding-left: 10px;"><h2>{{idx+1}}</h2></td><td style="vertical-align: middle;">
+                                <a href='https://www.geni.com/{{entry["id"]}}' target='_blank'><img src='{{entry["mug"]}}' style='border: 1px black; width: 40px;'></a></td>
+                                <td width="200px" style="padding-left: 10px;"><a href='https://www.geni.com/{{entry["id"]}}' target='_blank'><h3>{{entry["name"]}}</h3></a></td>
+                                <td style="padding-left: 30px; padding-right: 10px;"><h2>{{entry["updates"]}}</h2></td>
+                            </tr>
+                            {% if idx != len(mergeleaders)-1 %}
+                            <tr><td colspan='4'><div style="border-top: 1px solid darkgray; padding-bottom: 5px;"></div></td></tr>
+                            {% end %}
+                            {% end %}
+                        </table>
+                    </div>
+                </td>
+            </tr>
+            <tr id="slide2" style="display: {%if page == 2%}block{%else%}none{%end%};">
+                <td style="vertical-align: top; width: 400px;">
+                    <div class="shadoweffect" style="text-align: center; margin-bottom: 10px; padding-bottom: 10px; background-color: rgba(255, 255, 255, 0.8);">
+                        <a href="javascript:void(0);" onclick="slideLeft();" style="color: black; text-decoration:none;"><img src="/static/images/arrow_left.png" align="left" style="padding-left: 10px; maring-top: -1px; margin-right: -36px;"></a><h1>Tree Building</h1></div>
+                    <div class="shadoweffect" style="padding-bottom: 2px; background-color: rgba(255, 255, 255, 0.75);">
+                        <table width="400">
+                            <tr><td style='padding-bottom: 5px;'><h3>Rank</h3></td>
+                                <td align='center' colspan='2' style='padding-bottom: 5px;'><h3>Curator</h3></td>
+                                <td style="padding-left: 30px; padding-right: 10px; padding-bottom: 5px;"><h3>Count</h3></td></tr>
+                            <tr><td colspan='4'><div style="border-top: 1px solid darkgray; padding-bottom: 5px;"></div></td></tr>
+                            {% for idx,entry in enumerate(additionleaders) %}
+                            <tr><td style="padding-right: 20px; padding-left: 10px;"><h2>{{idx+1}}</h2></td><td style="vertical-align: middle;">
+                                <a href='https://www.geni.com/{{entry["id"]}}' target='_blank'><img src='{{entry["mug"]}}' style='border: 1px black; width: 40px;'></a></td>
+                                <td  width="200px" style="padding-left: 10px;"><a href='https://www.geni.com/{{entry["id"]}}' target='_blank'><h3>{{entry["name"]}}</h3></a></td>
+                                <td style="padding-left: 30px; padding-right: 10px;"><h2>{{entry["additions"]}}</h2></td>
+                            </tr>
+                            {% if idx != len(additionleaders)-1 %}
+                            <tr><td colspan='4'><div style="border-top: 1px solid darkgray; padding-bottom: 5px;"></div></td></tr>
+                            {% end %}
+                            {% end %}
+                        </table>
+                    </div>
+
+                </td>
+                <td width="155px"></td>
+                <td style="vertical-align: top; width: 400px;">
+                    <div class="shadoweffect" style="text-align: center; margin-bottom: 10px; padding-bottom: 10px; background-color: rgba(255, 255, 255, 0.8);">
+                        <a href="javascript:void(0);" onclick="slideRight();" style="color: black; text-decoration:none;"><img src="/static/images/arrow_right.png" align="right" style="padding-right: 10px; margin-top: -1px; margin-left: -36px;"></a><h1>Documentation</h1></div>
+                    <div class="shadoweffect" style="padding-bottom: 2px; background-color: rgba(255, 255, 255, 0.75);">
+                        <table width="400">
+                            <tr><td style='padding-bottom: 5px;'><h3>Rank</h3></td>
+                                <td align='center' colspan='2' style='padding-bottom: 5px;'><h3>Curator</h3></td>
+                                <td style="padding-left: 30px; padding-right: 10px; padding-bottom: 5px;"><h3>Count</h3></td></tr>
+                            <tr><td colspan='4'><div style="border-top: 1px solid darkgray; padding-bottom: 5px;"></div></td></tr>
+                            {% for idx,entry in enumerate(documentleaders) %}
+                            <tr><td style="padding-right: 20px; padding-left: 10px;"><h2>{{idx+1}}</h2></td><td style="vertical-align: middle;">
+                                <a href='https://www.geni.com/{{entry["id"]}}' target='_blank'><img src='{{entry["mug"]}}' style='border: 1px black; width: 40px;'></a></td>
+                                <td width="200px" style="padding-left: 10px;"><a href='https://www.geni.com/{{entry["id"]}}' target='_blank'><h3>{{entry["name"]}}</h3></a></td>
+                                <td style="padding-left: 30px; padding-right: 10px;"><h2>{{entry["document"]}}</h2></td>
+                            </tr>
+                            {% if idx != len(documentleaders)-1 %}
+                            <tr><td colspan='4'><div style="border-top: 1px solid darkgray; padding-bottom: 5px;"></div></td></tr>
+                            {% end %}
+                            {% end %}
+                        </table>
+                    </div>
+                </td>
+            </tr>
+            <tr id="slide3" style="display: {%if page == 3%}block{%else%}none{%end%};">
+                <td style="vertical-align: top; width: 400px;">
+                    <div class="shadoweffect" style="text-align: center; margin-bottom: 10px; padding-bottom: 10px; background-color: rgba(255, 255, 255, 0.8);">
+                        <a href="javascript:void(0);" onclick="slideLeft();" style="color: black; text-decoration:none;"><img src="/static/images/arrow_left.png" align="left" style="padding-left: 10px; maring-top: -1px; margin-right: -36px;"></a><h1>Projects</h1></div>
+                    <div class="shadoweffect" style="padding-bottom: 2px; background-color: rgba(255, 255, 255, 0.75);">
+                        <table width="400">
+                            <tr><td style='padding-bottom: 5px;'><h3>Rank</h3></td>
+                                <td align='center' colspan='2' style='padding-bottom: 5px;'><h3>Curator</h3></td>
+                                <td style="padding-left: 30px; padding-right: 10px; padding-bottom: 5px;"><h3>Count</h3></td></tr>
+                            <tr><td colspan='4'><div style="border-top: 1px solid darkgray; padding-bottom: 5px;"></div></td></tr>
+                            {% for idx,entry in enumerate(projectleaders) %}
+                            <tr><td style="padding-right: 20px; padding-left: 10px;"><h2>{{idx+1}}</h2></td><td style="vertical-align: middle;">
+                                <a href='https://www.geni.com/{{entry["id"]}}' target='_blank'><img src='{{entry["mug"]}}' style='border: 1px black; width: 40px;'></a></td>
+                                <td  width="200px" style="padding-left: 10px;"><a href='https://www.geni.com/{{entry["id"]}}' target='_blank'><h3>{{entry["name"]}}</h3></a></td>
+                                <td style="padding-left: 30px; padding-right: 10px;"><h2>{{entry["projects"]}}</h2></td>
+                            </tr>
+                            {% if idx != len(projectleaders)-1 %}
+                            <tr><td colspan='4'><div style="border-top: 1px solid darkgray; padding-bottom: 5px;"></div></td></tr>
+                            {% end %}
+                            {% end %}
+                        </table>
+                    </div>
+
+                </td>
+                <td width="155px"></td>
+                <td style="vertical-align: top; width: 400px;">
+                    <div class="shadoweffect" style="text-align: center; margin-bottom: 10px; padding-bottom: 10px; background-color: rgba(255, 255, 255, 0.8);">
+                        <a href="javascript:void(0);" onclick="slideRight();" style="color: black; text-decoration:none;"><img src="/static/images/arrow_right.png" align="right" style="padding-right: 10px; margin-top: -1px; margin-left: -36px;"></a><h1>Overall</h1></div>
+                    <div class="shadoweffect" style="padding-bottom: 2px; background-color: rgba(255, 255, 255, 0.75);">
+                        <table width="400">
+                            <tr><td style='padding-bottom: 5px;'><h3>Rank</h3></td>
+                                <td align='center' colspan='2' style='padding-bottom: 5px;'><h3>Curator</h3></td>
+                                <td style="padding-left: 30px; padding-right: 10px; padding-bottom: 5px;"><h3>Score</h3></td></tr>
+                            <tr><td colspan='4'><div style="border-top: 1px solid darkgray; padding-bottom: 5px;"></div></td></tr>
+                            {% for idx,entry in enumerate(totalleaders) %}
+                            <tr><td style="padding-right: 20px; padding-left: 10px;"><h2>{{idx+1}}</h2></td><td style="vertical-align: middle;">
+                                <a href='https://www.geni.com/{{entry["id"]}}' target='_blank'><img src='{{entry["mug"]}}' style='border: 1px black; width: 40px;'></a></td>
+                                <td  width="200px" style="padding-left: 10px;"><a href='https://www.geni.com/{{entry["id"]}}' target='_blank'><h3>{{entry["name"]}}</h3></a></td>
+                                <td style="padding-left: 30px; padding-right: 10px;"><h2>{{entry["total"]}}</h2></td>
+                            </tr>
+                            {% if idx != len(totalleaders)-1 %}
+                            <tr><td colspan='4'><div style="border-top: 1px solid darkgray; padding-bottom: 5px;"></div></td></tr>
+                            {% end %}
+                            {% end %}
+                        </table>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+</center>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-44683726-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block body %}
+<br/><br/>
+<div class="shadoweffect-business">
+    <div style="padding-left: 7px; padding-top: 5px; padding-right: 7px;">
+    <h2>Are your ancestors famous historical figures?</h2><br/><p align="justify">
+    History Search will compare your direct ancestors (and their siblings) to projects on Geni that focus on historical or
+    famous individuals. It will list any matches found, the relation, and what projects they belong to. It can also
+    search for master profiles, problem profiles, pending merges, and can create a simple visualization of tree completeness. Note that not
+    being connected to the <a href="https://www.geni.com/worldfamilytree">world family tree</a> will severely limit the
+    potential for ancestor matches.</p><br/>
+    <div style="padding-left: 30px; padding-right: 30px;">
+        <div style="margin-left: 1px; float: left;"><strong>Ancestor (Example)</strong></div><div style="margin-right: 3px; float: right;">Projects</div><br/><hr/>
+
+        <table style="width: 100%;">
+            <tr>
+                <td style="width: 50%" align="left">
+                    <a href="https://www.geni.com/people/6000000001495436722">Stephen Hopkins, "Mayflower" Passenger</a> is your 11th Great Grandfather
+                </td>
+                <td style="width: 50%" align="right">
+                    <a href="https://www.geni.com/projects/Great-Migration-Passengers-of-the-Mayflower-1620/8">Great Migration: Passengers of the Mayflower, 1620</a>
+                </td></tr>
+        </table>
+        <div class="separator"></div>
+        <table style="width: 100%;">
+            <tr>
+                <td style="width: 50%" align="left">
+                    <a href="https://www.geni.com/people/5597380726000028489">William the Conqueror, King of England</a> is your 18th Great Grandfather
+                </td>
+                <td style="width: 50%" align="right">
+                    <a href="https://www.geni.com/projects/Historic-Sussex/12834">Historic Sussex</a>, <a href="https://www.geni.com/projects/Battle-of-Hastings/1003">Battle of Hastings</a>
+                </td></tr>
+        </table>
+        <div class="separator"></div>
+
+    </div>
+    <br/>
+    <table><tr><td valign="top">
+    <h2>10 generation graphs to focus your research!</h2><br/><p align="justify">
+    Ancestor Graph can build a 10 generation interactive graph to help you identify areas to focus your research.  It is based on the excellent desktop visualization tool <a href="https://www.geni.com/projects/Complete-ancestors-trees-iSeeTrees/11399" target="_blank">iSeeTrees</a>.
+    Along with easily showing you the gaps in your tree, it will identify duplicate ancestors (<a href="https://en.wikipedia.org/wiki/Pedigree_collapse" target="_blank">pedigree collapse</a>) via color.  In addition, it provides options for viewing the status of the profiles
+        (Claimed Profile, Private Profile, Public Profile, Master Profile, Problem Profile), Gender, and Location (Country of Birth, State/Region of Birth, Country of Death, State/Region of Death).  You can see information as you hover over the profiles to include name, dates and location.
+        You can zoom in on any ancestor or open the profile in a new tab.  Save the graph as a image or a Adobe PDF!</p>
+        </td>
+        <td>
+    <img src="/static/images/examplehalfgraphsm.jpeg" align="right" style="padding-right: 6px; padding-left: 12px;">
+        </td>
+        </tr></table>
+    <br/>
+    <div>Send me a message if you have any issues or suggestions,<br/>
+        <div style="display:block; margin-top: 20px; float: right;">
+            <table><tr><td style="padding-right: 15px;">
+            <button align="right" onClick="location.href='https://historylinktools.herokuapp.com/history'" class="cta cta-green">History Search</button></td>
+                <td ><button align="right" onClick="location.href='https://historylinktools.herokuapp.com/graph'" class="cta cta-green">Ancestor Graph</button>
+</td></tr></table></div>
+        <a href="https://www.geni.com/profile-16675621"><img src="/static/images/signature.png" style="padding-top: 5px;"></a>
+    </div>
+    </div>
+</div>
+{% end %}

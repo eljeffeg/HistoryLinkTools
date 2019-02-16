@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block body %}
+<script language="javascript" type="text/javascript">
+    var running = false;
+    String.prototype.startswith = function (string) {
+        return(this.indexOf(string) === 0);
+    };
+    function submitProject(project_id) {
+        if (running) {
+            return;
+        }
+        var submittype = "Refreshing Project #";
+        if (project_id == null) {
+            submittype = "Adding Project #";
+            project_id = document.getElementById("projectval").value.toString().trim();
+        }
+        if (project_id.length > 0) {
+            if (project_id.indexOf("/") != -1) {
+                project_id = project_id.substring(project_id.lastIndexOf('/')+1);
+            } else if (project_id.indexOf("project-") != -1) {
+                project_id = project_id.replace("project-", "");
+            }
+            var isnum = /^\d+$/.test(project_id);
+            if (isnum) {
+                running = true;
+                $('.progress3').slideToggle();
+                $('.progress2').slideToggle();
+                document.getElementById("addbutton").disabled = true;
+                document.getElementById("projectprocessing").innerHTML = submittype + project_id + "<img src='/static/images/processing1.gif' style='padding-left: 15px;'>";
+                window.setTimeout(function() {
+                    $.ajax({
+                        type: "POST",
+                        url: "/projectsubmit",
+                        data: {project: project_id},
+                        timeout: 300000,
+                        error: function (xhr, status) {
+                            $('.progress3').slideToggle();
+                            $('.progress2').slideToggle();
+                            document.getElementById("projectprocessing").innerHTML = "";
+                            running = false;
+                        },
+                        success: function(response) {
+                            $('.progress3').slideToggle();
+                            $('.progress2').slideToggle();
+                            document.getElementById("projectprocessing").innerHTML = "";
+                            document.getElementById("addbutton").disabled = false;
+                            $.ajax({
+                                url: "/projectlist",
+                                cache: false,
+                                dataType: "html",
+                                success: function(data) {
+                                    running = false;
+                                    if (data != "DONE") {
+                                        document.getElementById("projectlist").innerHTML = data;
+                                    } else {
+                                        //Try again
+                                        $('#projectlist').load('/projectlist');
+                                    }
+                                }
+                            });
+                        }
+                    });
+                }, 500);
+            } else {
+                alert("This does not appear to be a valid Geni project id.\nPlease use the numeric id or the full URL of the project.");
+            }
+        }
+        return
+    }
+    function entsub(e,form){
+        var key=e.keyCode || e.which;
+        if (key==13){
+            submitProject(null);
+        }
+    }
+</script>
+
+<br/><br/>
+<div class="shadoweffect-business">
+    HistoryLink does not contain all Geni Projects, as many do not relate to famous or historical figures.&nbsp;&nbsp;If there is a project you think should be added or updated, please submit it below.
+    Avoid projects that primarily serve as working groups, such as <a href="https://www.geni.com/projects/Mega-Merge/10927" target="_blank">Mega-Merge</a>, or that serve only to group a family.<br/><br/>
+    <center>
+        <input type="text" name="projectval" id="projectval" onkeypress="entsub(event,this.form);" style="width: 300px;"><button style="margin-left: 8px;" onclick="submitProject(null);" id="addbutton">Add Project</button></br>
+    </center>
+</div>
+<br/>
+<div id="projectlist"></div>
+<script language="javascript" type="text/javascript">
+    document.getElementById("addbutton").disabled = false;
+    $.ajax({
+        url: "/projectlist",
+        cache: false,
+        dataType: "html",
+        success: function(data) {
+            if (data != "DONE") {
+                document.getElementById("projectlist").innerHTML = data;
+            } else {
+                //Try again
+                $('#projectlist').load('/projectlist');
+            }
+        }
+    });
+</script>
+{% end %}

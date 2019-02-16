@@ -1,0 +1,22 @@
+<div style="text-align: center; margin-bottom: -5px; padding-top: 5px;"><h2>HistoryLink Geni Projects</h2></div>
+<div style="padding-left: 8px; padding-bottom: 3px; float: left">ID: Name</div><div style="padding-right: 8px; padding-bottom: 3px; text-align: right;">.</div>
+<div class="shadoweffect-business" id="shadoweffect" >
+    <table width="100%"><tr><td>
+        {% for idx,item in enumerate(projects) %}
+        <div style="float: left; width: 50%; display: inline-block;">
+            <ul>
+                {% if idx%2 == 0 %}
+                <li><img src="/static/images/refresh.png" style="cursor: pointer; vertical-align: middle; padding-right: 6px; padding-left: 5px; padding-top: 2px; padding-bottom: 2px;" onclick="submitProject('{{item["id"]}}');" title="Update Name Project #{{item["id"]}}" alt="Refresh Project #{{item["id"]}}"><a href='/projects?delete={{item["id"]}}'><img src='/static/images/delete.png' alt='Delete Project #{{item["id"]}}' style='margin-bottom: -4px; padding-right: 7px;'></a><a href='https://www.geni.com/project-{{item["id"]}}' target="_blank">{{item["id"]}}:&nbsp;&nbsp;&nbsp;{{ item["name"] }}&#8206;</a></li>
+                {% end %}
+            </ul>
+        </div>
+        <div style="float: right; width: 50%;display: inline-block;">
+            <ul>
+                {% if idx%2 != 0 %}
+                <li><img src="/static/images/refresh.png" style="cursor: pointer; vertical-align: middle; padding-right: 6px; padding-left: 5px; padding-top: 2px; padding-bottom: 2px;" onclick="submitProject('{{item["id"]}}');" title="Update Name Project #{{item["id"]}}" alt="Refresh Project #{{item["id"]}}"><a href='/projects?delete={{item["id"]}}'><img src='/static/images/delete.png' alt='Delete Project #{{item["id"]}}' style='margin-bottom: -4px; padding-right: 7px;'></a><a href='https://www.geni.com/project-{{item["id"]}}' target="_blank">{{item["id"]}}:&nbsp;&nbsp;&nbsp;{{ item["name"] }}&#8206;</a></li>
+                {% end %}
+            </ul>
+        </div>
+        {% end %}
+    </td></tr></table>
+</div>
